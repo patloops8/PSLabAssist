@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      3.0.0
+// @version      3.1.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v3.0.0',
+      panelSubtitle: 'EAFC 26 · v3.1.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       manualNamePlaceholder: 'Nombre',
       manualPositionPlaceholder: 'Posición',
@@ -82,6 +82,8 @@
       logFoundAndCached: 'Jugador encontrado y guardado en caché: página %1, posición %2.',
       logOpening: 'Abriendo "%1" para %2…',
       logOpenFail: 'No pude abrir/buscar en "%1". Se omite.',
+      logTileNotFound: '⚠ No se encontró el tile de "%1" en la pestaña "%2" (probando otra pestaña si queda).',
+      logTileClickRetry: '⚠ El tile de "%1" no abrió el modal de detalle a tiempo (intento %2/3). Reintentando…',
       logGridFail: 'No cargó la lista de jugadores para "%1". Se omite.',
       logSearching: 'Buscando a "%1" en "%2"...',
       logNotEligible: '"%1" no es elegible en "%2". Se omite.',
@@ -141,7 +143,7 @@
 
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v3.0.0',
+      panelSubtitle: 'EAFC 26 · v3.1.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       manualNamePlaceholder: 'Name',
       manualPositionPlaceholder: 'Position',
@@ -179,6 +181,8 @@
       logFoundAndCached: 'Player found and cached: page %1, position %2.',
       logOpening: 'Opening "%1" for %2…',
       logOpenFail: 'Could not open/search in "%1". Skipping.',
+      logTileNotFound: '⚠ Could not find the "%1" tile under the "%2" tab (trying the other tab if any).',
+      logTileClickRetry: '⚠ The "%1" tile did not open the detail modal in time (attempt %2/3). Retrying…',
       logGridFail: 'Player list did not load for "%1". Skipping.',
       logSearching: 'Searching for "%1" in "%2"...',
       logNotEligible: '"%1" is not eligible in "%2". Skipping.',
@@ -961,15 +965,42 @@
       simulateRealClick(tabBtn);
       await sleep(500);
       const titleEl = await findEvolutionTileByTitle(title);
-      if (titleEl) {
-        titleEl.scrollIntoView({ block: 'center' });
-        await sleep(250);
-        const tile = titleEl.closest('.ut-academy-slot-tile-view') || titleEl;
-        simulateRealClick(tile);
-        const searchBtn = await waitFor(() => findButtonByExactText('Search'), { timeout: 8000 });
-        if (searchBtn) { simulateRealClick(searchBtn); return true; }
-        return false;
+      if (!titleEl) {
+        queueLog(t('logTileNotFound', title, tabName));
+        continue;
       }
+
+      titleEl.scrollIntoView({ block: 'center' });
+      await sleep(250);
+      const tile = titleEl.closest('.ut-academy-slot-tile-view') || titleEl;
+
+      // Reintentamos el clic en el tile hasta 3 veces si el botón
+      // "Search" no aparece a tiempo. El tile puede haberse encontrado y
+      // clickeado bien, pero la apertura del modal de detalle (donde
+      // vive "Search") a veces no responde al primer clic — por ejemplo
+      // si la animación de otro tile todavía no había terminado, o el
+      // clic llegó en un frame donde el tile aún no era interactivo.
+      let searchBtn = null;
+      for (let attempt = 0; attempt < 3 && !searchBtn; attempt++) {
+        if (!queueActive) return false;
+        if (attempt > 0) {
+          // Volver a ubicar el tile por si el DOM se re-renderizó
+          const retryTitleEl = await findEvolutionTileByTitle(title);
+          const retryTile = retryTitleEl ? (retryTitleEl.closest('.ut-academy-slot-tile-view') || retryTitleEl) : tile;
+          if (retryTitleEl) retryTitleEl.scrollIntoView({ block: 'center' });
+          await sleep(200);
+          simulateRealClick(retryTile);
+        } else {
+          simulateRealClick(tile);
+        }
+        searchBtn = await waitFor(() => findButtonByExactText('Search'), { timeout: 6000 + attempt * 2000 });
+        if (!searchBtn && attempt < 2) {
+          queueLog(t('logTileClickRetry', title, attempt + 1));
+          await sleep(400);
+        }
+      }
+      if (searchBtn) { simulateRealClick(searchBtn); return true; }
+      return false;
     }
     return false;
   }
@@ -2991,5 +3022,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v3.0.0: eliminado el modo Paletools — el choque entre ambos scripts causaba el bug de navegación. Solo modo manual, con paginación de tiles corregida). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v3.1.0: reintentos al abrir el tile de evolución si el modal de detalle no aparece a tiempo, logs distinguiendo "tile no encontrado" de "tile encontrado pero no abrió"). Idioma actual: ${currentLang}.`);
 })();
