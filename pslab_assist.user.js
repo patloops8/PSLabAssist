@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      3.1.0
+// @version      3.3.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v3.1.0',
+      panelSubtitle: 'EAFC 26 · v3.3.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       manualNamePlaceholder: 'Nombre',
       manualPositionPlaceholder: 'Posición',
@@ -83,6 +83,7 @@
       logOpening: 'Abriendo "%1" para %2…',
       logOpenFail: 'No pude abrir/buscar en "%1". Se omite.',
       logTileNotFound: '⚠ No se encontró el tile de "%1" en la pestaña "%2" (probando otra pestaña si queda).',
+      logVisibleTilesDebug: '🔍 Tiles visibles en este momento: %1',
       logTileClickRetry: '⚠ El tile de "%1" no abrió el modal de detalle a tiempo (intento %2/3). Reintentando…',
       logGridFail: 'No cargó la lista de jugadores para "%1". Se omite.',
       logSearching: 'Buscando a "%1" en "%2"...',
@@ -143,7 +144,7 @@
 
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v3.1.0',
+      panelSubtitle: 'EAFC 26 · v3.3.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       manualNamePlaceholder: 'Name',
       manualPositionPlaceholder: 'Position',
@@ -182,6 +183,7 @@
       logOpening: 'Opening "%1" for %2…',
       logOpenFail: 'Could not open/search in "%1". Skipping.',
       logTileNotFound: '⚠ Could not find the "%1" tile under the "%2" tab (trying the other tab if any).',
+      logVisibleTilesDebug: '🔍 Tiles currently visible: %1',
       logTileClickRetry: '⚠ The "%1" tile did not open the detail modal in time (attempt %2/3). Retrying…',
       logGridFail: 'Player list did not load for "%1". Skipping.',
       logSearching: 'Searching for "%1" in "%2"...',
@@ -896,9 +898,18 @@
   async function findEvolutionTileByTitle(title) {
     const list = document.querySelector('.ut-academy-hub-view--list');
     if (!list) return null;
+    // Normaliza espacios para comparar: el HTML de EA a veces usa espacios
+    // no-rompibles (\u00A0) u otras variantes de espacio en blanco dentro
+    // de algunos títulos (ej. "Quick Step", "Press Proven") para evitar que
+    // se corten en dos líneas. Visualmente son idénticos a un espacio
+    // normal, pero en JS "Quick Step" !== "Quick\u00A0Step" con ===.
+    function normalizeSpaces(s) {
+      return (s || '').replace(/[\s\u00A0\u2000-\u200B\u202F\u205F\u3000]+/g, ' ').trim();
+    }
+    const titleNorm = normalizeSpaces(title);
     function lookForTitle() {
       return Array.from(document.querySelectorAll('h1.ut-academy-slot-tile-view--title'))
-        .find(h => h.textContent.trim() === title && isVisible(h));
+        .find(h => normalizeSpaces(h.textContent) === titleNorm && isVisible(h));
     }
 
     // Primero intentamos scroll dentro de la lista (esto cubre el caso con
@@ -921,6 +932,30 @@
       lastTop = list.scrollTop;
       steps++;
     }
+
+    // Antes de paginar hacia adelante, nos aseguramos de estar en la
+    // primera página: la SPA de EA puede "recordar" en qué página de tiles
+    // quedamos de una visita anterior a esta misma pestaña (ej. si en el
+    // PS anterior de la cola terminamos en la página 2 o 3), y como solo
+    // sabemos avanzar con "Next", si el tile buscado está en una página
+    // anterior a la actual nunca lo encontraríamos. Retrocedemos del todo
+    // con "Previous" para arrancar siempre desde un punto conocido.
+    let backSteps = 0;
+    while (backSteps < 10) {
+      if (!queueActive) return null;
+      const prevBtn = findButtonByExactText('Previous');
+      if (!prevBtn) break;
+      const sigBeforeBack = evoTilesSignature();
+      simulateRealClick(prevBtn);
+      await sleep(400);
+      if (evoTilesSignature() === sigBeforeBack) {
+        await sleep(300);
+        if (evoTilesSignature() === sigBeforeBack) break;
+      }
+      backSteps++;
+    }
+    found = lookForTitle();
+    if (found) return found;
 
     // Si el scroll no encontró nada, probamos paginar con "Next": sin
     // Paletools, los tiles de PlayStyles vienen repartidos en páginas
@@ -967,6 +1002,16 @@
       const titleEl = await findEvolutionTileByTitle(title);
       if (!titleEl) {
         queueLog(t('logTileNotFound', title, tabName));
+        // Diagnóstico: mostrar qué tiles SÍ están visibles en este momento,
+        // para poder comparar a simple vista si hay alguna diferencia
+        // sutil con el título que buscamos (espacios raros, mayúsculas,
+        // símbolos). Solo se loguea si realmente no se encontró nada.
+        const visibleTitles = Array.from(document.querySelectorAll('h1.ut-academy-slot-tile-view--title'))
+          .filter(h => isVisible(h))
+          .map(h => `"${h.textContent.trim()}"`)
+          .slice(0, 15)
+          .join(', ');
+        if (visibleTitles) queueLog(t('logVisibleTilesDebug', visibleTitles));
         continue;
       }
 
@@ -3022,5 +3067,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v3.1.0: reintentos al abrir el tile de evolución si el modal de detalle no aparece a tiempo, logs distinguiendo "tile no encontrado" de "tile encontrado pero no abrió"). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v3.3.0: reset con "Previous" a la primera página de tiles antes de paginar, para no perderse PS si la pantalla quedó adelantada de una búsqueda anterior). Idioma actual: ${currentLang}.`);
 })();
