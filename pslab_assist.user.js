@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      3.3.0
+// @version      3.4.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v3.3.0',
+      panelSubtitle: 'EAFC 26 · v3.4.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       manualNamePlaceholder: 'Nombre',
       manualPositionPlaceholder: 'Posición',
@@ -144,7 +144,7 @@
 
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v3.3.0',
+      panelSubtitle: 'EAFC 26 · v3.4.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       manualNamePlaceholder: 'Name',
       manualPositionPlaceholder: 'Position',
@@ -2021,10 +2021,11 @@
     #pslab-overlay.active {
       display: flex;
     }
-    /* Cuando se espera confirmación manual del usuario, el overlay deja
-       pasar los clics hacia el modal real de EA (Confirm/Ok/Cancel) que
-       queda debajo. Además la tarjeta se mueve a una esquina para no
-       tapar visualmente el modal de EA, que aparece centrado. */
+    /* El overlay queda en modo "click-through" durante toda la ejecución
+       de la cola: sin blur, transparente, dejando ver la Web App debajo
+       y pasar los clics hacia ella (necesario para confirmar Ok/Cancel
+       manualmente). La tarjeta de progreso queda en una esquina para no
+       tapar el centro de la pantalla, donde EA suele mostrar sus modales. */
     #pslab-overlay.pslab-clickthrough {
       pointer-events: none;
       backdrop-filter: none;
@@ -2757,10 +2758,17 @@
     document.getElementById('pslab-overlay-step').textContent = '';
     document.getElementById('pslab-overlay-confirm-hint').classList.remove('visible');
     overlay.classList.add('active');
+    // El overlay queda siempre en modo "click-through" (sin blur, sin
+    // tapar la pantalla) durante toda la ejecución de la cola, no solo
+    // al esperar confirmación manual — así el usuario puede ver en todo
+    // momento qué está pasando en la Web App, útil tanto para
+    // diagnosticar problemas como para tranquilidad general.
+    overlay.classList.add('pslab-clickthrough');
   }
 
   function overlayHide() {
     overlay.classList.remove('active');
+    overlay.classList.remove('pslab-clickthrough');
     overlayItems = [];
   }
 
@@ -2783,9 +2791,9 @@
   function overlayShowConfirmHint(visible) {
     const el = document.getElementById('pslab-overlay-confirm-hint');
     if (el) el.classList.toggle('visible', visible);
-    // Mientras se espera el "Ok"/"Cancel" manual del usuario, dejamos pasar
-    // los clics hacia el modal real de EA (que está debajo del overlay).
-    overlay.classList.toggle('pslab-clickthrough', visible);
+    // Nota: el modo click-through ya está activo todo el tiempo desde
+    // overlayShow(), así que acá solo controlamos el mensaje visual de
+    // aviso, no la transparencia (que ya es constante durante la cola).
   }
 
   const STATUS_LABELS = {
@@ -3067,5 +3075,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v3.3.0: reset con "Previous" a la primera página de tiles antes de paginar, para no perderse PS si la pantalla quedó adelantada de una búsqueda anterior). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v3.4.0: overlay sin blur durante toda la cola, para poder ver siempre qué pasa en la Web App). Idioma actual: ${currentLang}.`);
 })();
