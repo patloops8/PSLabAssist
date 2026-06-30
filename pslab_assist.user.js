@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      2.13.0
+// @version      2.14.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v2.13.0',
+      panelSubtitle: 'EAFC 26 · v2.14.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       tabPaletools: 'Con Paletools',
       tabManual: 'Sin Paletools',
@@ -157,7 +157,7 @@
       scanProgressOpenAndSearch: '⚠ Abre una evolución y presiona "Search" primero.',
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v2.13.0',
+      panelSubtitle: 'EAFC 26 · v2.14.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       tabPaletools: 'With Paletools',
       tabManual: 'Without Paletools',
@@ -940,6 +940,26 @@
     return null;
   }
 
+  // Tras terminar o interrumpir la cola, la Web App de EA puede quedar en
+  // un estado intermedio de navegación: un tab de evolución a medio
+  // cambiar, o el grid en pleno scroll/filtrado interrumpido. Esto provoca
+  // que la sección PlayStyles dentro de Evolutions deje de filtrar bien por
+  // categoría hasta que el usuario recarga la página (F5). Para evitarlo,
+  // navegamos de nuevo a "Evolutions" desde el menú principal al cerrar la
+  // cola — eso fuerza a la SPA de EA a reconstruir su estado de navegación
+  // desde cero, en vez de dejarlo a medio camino.
+  async function resetEvolutionsNavigation() {
+    try {
+      const evoNav = findButtonByExactText('Evolutions');
+      if (evoNav) {
+        simulateRealClick(evoNav);
+        await sleep(500);
+      }
+    } catch (e) {
+      console.warn('[PS Lab Assist] No se pudo resetear la navegación de Evolutions tras la cola.', e);
+    }
+  }
+
   async function openEvolutionByTitle(title, preferredTab) {
     const evoNav = findButtonByExactText('Evolutions');
     if (evoNav) simulateRealClick(evoNav);
@@ -1193,6 +1213,7 @@
       updateResumeButtonVisibility();
       overlayShowConfirmHint(false);
       setTimeout(() => overlayHide(), 1500);
+      await resetEvolutionsNavigation();
       return;
     }
 
@@ -1210,6 +1231,7 @@
     lastFailedItems = failed.length > 0 ? failed : null;
     updateRetryButtonVisibility();
 
+    await resetEvolutionsNavigation();
     setTimeout(() => overlayHide(), 3000);
   }
 
@@ -3310,5 +3332,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v2.13.0: timeout de seguridad por evolución, botones de continuar cola pendiente y reintentar fallidos, marcado visual de PS aplicados en la grilla). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v2.14.0: fix de navegación "rota" en Evolutions tras terminar/interrumpir la cola — se resetea automáticamente). Idioma actual: ${currentLang}.`);
 })();
