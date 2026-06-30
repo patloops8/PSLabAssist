@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      2.10.0
+// @version      2.11.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v2.10.0',
+      panelSubtitle: 'EAFC 26 · v2.11.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       tabPaletools: 'Con Paletools',
       tabManual: 'Sin Paletools',
@@ -81,6 +81,7 @@
       logCacheMismatch: 'Caché no coincidió para "%1", descartando y escaneando desde página 0…',
       logSkippingPage: 'Pág. %1: ratings %2-%3, buscando %4. Saltando página (sin revisar tarjetas).',
       logRangeIncludesTarget: 'Pág. %1: ratings %2-%3 incluye al objetivo (%4). Empezando escaneo detallado.',
+      logScanningCard: 'Revisando tarjeta %1 de %2 en página %3…',
       logFoundById: '✓ Jugador encontrado por ID en página %1, posición %2.',
       logFoundAndCached: 'Jugador encontrado y guardado en caché: página %1, posición %2.',
       logOpening: 'Abriendo "%1" para %2…',
@@ -135,6 +136,7 @@
       statusStoppedByUser: 'Detenida por el usuario.',
 
       overlayStepGoingDirect: 'Yendo directo a página %1…',
+      overlayStepScanningCards: 'Revisando %2 tarjeta(s) en página %1…',
       overlayStepProgress: '%1 / %2 — %3',
       overlayStepDone: 'Listo. %1 evolución(es) aplicada(s).',
 
@@ -147,7 +149,7 @@
       scanProgressOpenAndSearch: '⚠ Abre una evolución y presiona "Search" primero.',
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v2.10.0',
+      panelSubtitle: 'EAFC 26 · v2.11.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       tabPaletools: 'With Paletools',
       tabManual: 'Without Paletools',
@@ -184,6 +186,7 @@
       logCacheMismatch: 'Cache mismatch for "%1", discarding and scanning from page 0…',
       logSkippingPage: 'Page %1: ratings %2-%3, looking for %4. Skipping page (without checking cards).',
       logRangeIncludesTarget: 'Page %1: ratings %2-%3 includes the target (%4). Starting detailed scan.',
+      logScanningCard: 'Checking card %1 of %2 on page %3…',
       logFoundById: '✓ Player found by ID on page %1, position %2.',
       logFoundAndCached: 'Player found and cached: page %1, position %2.',
       logOpening: 'Opening "%1" for %2…',
@@ -238,6 +241,7 @@
       statusStoppedByUser: 'Stopped by user.',
 
       overlayStepGoingDirect: 'Going direct to page %1…',
+      overlayStepScanningCards: 'Checking %2 card(s) on page %1…',
       overlayStepProgress: '%1 / %2 — %3',
       overlayStepDone: 'Done. %1 evolution(s) applied.',
 
@@ -691,7 +695,15 @@
 
     const prevNameEl  = document.querySelector('div.name.main-view');
     const prevNameRaw = prevNameEl ? prevNameEl.textContent.trim() : '__NINGUNO__';
-    const btn = card.querySelector('button.ut-image-button-control.btnAction.add') || card;
+    // Varios selectores de respaldo por si EA cambió la estructura del botón
+    // de "agregar" dentro de la tarjeta. Si ninguno calza, hacemos clic
+    // directo sobre la tarjeta (li) como último recurso — mejor que no
+    // hacer nada en absoluto.
+    const btn = card.querySelector('button.ut-image-button-control.btnAction.add')
+      || card.querySelector('button.btnAction.add')
+      || card.querySelector('button[class*="add"]')
+      || card.querySelector('button')
+      || card;
     simulateRealClick(btn);
     // Margen tras el clic antes de empezar a verificar: un poco más
     // generoso que antes para tolerar momentos en que EA tarda más en
@@ -843,8 +855,17 @@
       }
 
       // Escaneo tarjeta por tarjeta (también cubre modo manual)
+      if (cards.length > 0) {
+        overlaySetStep(t('overlayStepScanningCards', pageIndex, cards.length));
+      }
       for (let ci = 0; ci < cards.length; ci++) {
         if (!queueActive) return false;
+        // Log de progreso cada 5 tarjetas (o en la primera), para distinguir
+        // "está trabajando despacio" de "está realmente trabado" — antes no
+        // había ninguna señal visible durante este bucle.
+        if (ci === 0 || ci % 5 === 0) {
+          queueLog(t('logScanningCard', ci + 1, cards.length, pageIndex));
+        }
         try {
           const matched = await tryClickCard(cards, ci, targetNorm, targetDefId, targetRating, targetPosition);
           if (matched) {
@@ -3057,5 +3078,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v2.10.0: reintentos para "Confirm Player" — tolera renders lentos, especialmente en el primer ítem de la cola). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v2.11.0: log de progreso durante el escaneo detallado, selector de botón de tarjeta más robusto con fallbacks). Idioma actual: ${currentLang}.`);
 })();
