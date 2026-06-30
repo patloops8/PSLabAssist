@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      2.11.0
+// @version      2.12.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v2.11.0',
+      panelSubtitle: 'EAFC 26 · v2.12.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       tabPaletools: 'Con Paletools',
       tabManual: 'Sin Paletools',
@@ -101,6 +101,7 @@
       logApplied: '✓ Aplicado "%1" a %2.',
       logCancelled: 'Cancelado "%1".',
       logQueueFinished: 'Cola finalizada.',
+      logQueueSummary: '✓ %1/%2 evolución(es) aplicada(s) correctamente.',
       logNeedScanFirst: '⚠ Primero escanea el club: abre una evolución → "Search" → "Escanear club".',
       logNeedSelectPlayer: '⚠ Selecciona un jugador de la lista antes de iniciar la cola.',
       logNeedAtLeastOnePS: 'Marca al menos un PlayStyle.',
@@ -149,7 +150,7 @@
       scanProgressOpenAndSearch: '⚠ Abre una evolución y presiona "Search" primero.',
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v2.11.0',
+      panelSubtitle: 'EAFC 26 · v2.12.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       tabPaletools: 'With Paletools',
       tabManual: 'Without Paletools',
@@ -206,6 +207,7 @@
       logApplied: '✓ Applied "%1" to %2.',
       logCancelled: 'Cancelled "%1".',
       logQueueFinished: 'Queue finished.',
+      logQueueSummary: '✓ %1/%2 evolution(s) applied successfully.',
       logNeedScanFirst: '⚠ First scan the club: open an evolution → "Search" → "Scan club".',
       logNeedSelectPlayer: '⚠ Select a player from the list before starting the queue.',
       logNeedAtLeastOnePS: 'Select at least one PlayStyle.',
@@ -1118,6 +1120,7 @@
     setQueueButtonsRunning(false);
     setQueueStatus(t('statusQueueFinished'));
     queueLog(t('logQueueFinished'));
+    queueLog(t('logQueueSummary', doneCount, items.length));
     overlaySetStep(t('overlayStepDone', doneCount));
     overlayShowConfirmHint(false);
     // Cerrar overlay automáticamente después de 3 s
@@ -3078,5 +3081,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v2.11.0: log de progreso durante el escaneo detallado, selector de botón de tarjeta más robusto con fallbacks). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v2.12.0: resumen final claro en el log — "X/Y evoluciones aplicadas correctamente"). Idioma actual: ${currentLang}.`);
 })();
