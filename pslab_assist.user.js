@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      2.15.0
+// @version      3.0.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,13 +43,8 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v2.15.0',
+      panelSubtitle: 'EAFC 26 · v3.0.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
-      tabPaletools: 'Con Paletools',
-      tabManual: 'Sin Paletools',
-      scanBtn: '⟳ Escanear club',
-      scanBtnRescan: '⟳ Re-escanear',
-      searchPlaceholder: 'Buscar jugador…',
       manualNamePlaceholder: 'Nombre',
       manualPositionPlaceholder: 'Posición',
       manualNote: '⚠ Escribe el nombre <strong>tal como aparece en la carta</strong> (ej: si la carta dice "David", escribe "David", no "Jonathan David").',
@@ -62,6 +57,7 @@
       presetSaveBtn: '💾 Guardar preset',
       autoConfirmLabel: 'Confirmar automáticamente',
       autoConfirmWarning: '⚠ Hace clic en "Ok" automáticamente. La carta queda intransferible sin pausa. Apagado por defecto.',
+      paletoolsWarning: '⚠ Si tienes Paletools instalado, <strong>apágalo</strong> antes de usar este script. Ambos a la vez pueden causar errores raros en la navegación de la Web App.',
       startBtn: '▶ Iniciar cola',
       stopBtn: '■ Detener',
       appliedLabel: '✓ Aplicadas:',
@@ -102,8 +98,7 @@
       logCancelled: 'Cancelado "%1".',
       logQueueFinished: 'Cola finalizada.',
       logQueueSummary: '✓ %1/%2 evolución(es) aplicada(s) correctamente.',
-      logNeedScanFirst: '⚠ Primero escanea el club: abre una evolución → "Search" → "Escanear club".',
-      logNeedSelectPlayer: '⚠ Selecciona un jugador de la lista antes de iniciar la cola.',
+      logNeedSelectPlayer: '⚠ Completa el formulario de jugador y presiona "Confirmar jugador" antes de iniciar la cola.',
       logNeedAtLeastOnePS: 'Marca al menos un PlayStyle.',
       logMaxPlus: 'Máximo %1 PlayStyles+.',
       logMaxWhite: 'Máximo %1 PlayStyles blancos.',
@@ -124,15 +119,11 @@
       logPresetGone: '⚠ Ese preset ya no existe.',
       logPresetLoaded: 'Preset "%1" cargado: %2 PS+ / %3 PS.',
       logPresetDeleted: 'Preset "%1" eliminado.',
-      logScanNeedSearch: 'Abre una evolución y haz clic en "Search" antes de escanear.',
-      logScanComplete: 'Escaneo completado: %1 jugadores elegibles encontrados.',
-      logPlayerSelectedPaletools: 'Jugador seleccionado: %1 (%2 %3) [ID: %4]',
       logPlayerSelectedManual: 'Jugador seleccionado: %1 (%2 %3) [modo manual]',
       logManualNeedName: '⚠ Escribe el nombre del jugador.',
       logManualNeedRating: '⚠ Escribe el OVR del jugador.',
       logManualNeedPosition: '⚠ Escribe la posición del jugador.',
       logManualBadRating: '⚠ OVR inválido. Debe ser un número entre 40 y 99.',
-      logScanOrient: 'Para escanear: abre Evolutions → elige una evolución → haz clic en "Search" → luego escanea.',
       logLangChanged: 'Idioma cambiado a Español.',
       logEmergencyStop: '[PS Lab Assist] Apagado de emergencia activado.',
 
@@ -148,22 +139,10 @@
       overlayStepProgress: '%1 / %2 — %3',
       overlayStepDone: 'Listo. %1 evolución(es) aplicada(s).',
 
-      scanProgressOpenFirst: '⚠ Primero abre una evolución y presiona "Search".',
-      scanProgressWaiting: 'Esperando que carguen las tarjetas…',
-      scanProgressCardsFailed: '⚠ Las tarjetas no cargaron. Intenta de nuevo.',
-      scanProgressScanning: 'Escaneando… %1 jugadores (pág. %2)',
-      scanProgressNoneFound: '⚠ No se encontraron jugadores. ¿Está abierta la lista de elegibles?',
-      scanProgressDone: '✓ %1 jugadores encontrados.',
-      scanProgressOpenAndSearch: '⚠ Abre una evolución y presiona "Search" primero.',
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v2.15.0',
+      panelSubtitle: 'EAFC 26 · v3.0.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
-      tabPaletools: 'With Paletools',
-      tabManual: 'Without Paletools',
-      scanBtn: '⟳ Scan club',
-      scanBtnRescan: '⟳ Re-scan',
-      searchPlaceholder: 'Search player…',
       manualNamePlaceholder: 'Name',
       manualPositionPlaceholder: 'Position',
       manualNote: '⚠ Type the name <strong>exactly as it appears on the card</strong> (e.g.: if the card says "David", type "David", not "Jonathan David").',
@@ -176,6 +155,7 @@
       presetSaveBtn: '💾 Save preset',
       autoConfirmLabel: 'Auto-confirm',
       autoConfirmWarning: '⚠ Automatically clicks "Ok". The card becomes untradeable with no pause. Off by default.',
+      paletoolsWarning: '⚠ If you have Paletools installed, <strong>turn it off</strong> before using this script. Both running together can cause odd navigation errors in the Web App.',
       startBtn: '▶ Start queue',
       stopBtn: '■ Stop',
       appliedLabel: '✓ Applied:',
@@ -215,8 +195,7 @@
       logCancelled: 'Cancelled "%1".',
       logQueueFinished: 'Queue finished.',
       logQueueSummary: '✓ %1/%2 evolution(s) applied successfully.',
-      logNeedScanFirst: '⚠ First scan the club: open an evolution → "Search" → "Scan club".',
-      logNeedSelectPlayer: '⚠ Select a player from the list before starting the queue.',
+      logNeedSelectPlayer: '⚠ Fill in the player form and press "Confirm player" before starting the queue.',
       logNeedAtLeastOnePS: 'Select at least one PlayStyle.',
       logMaxPlus: 'Maximum %1 PlayStyles+.',
       logMaxWhite: 'Maximum %1 white PlayStyles.',
@@ -237,15 +216,11 @@
       logPresetGone: '⚠ That preset no longer exists.',
       logPresetLoaded: 'Preset "%1" loaded: %2 PS+ / %3 PS.',
       logPresetDeleted: 'Preset "%1" deleted.',
-      logScanNeedSearch: 'Open an evolution and click "Search" before scanning.',
-      logScanComplete: 'Scan complete: %1 eligible players found.',
-      logPlayerSelectedPaletools: 'Player selected: %1 (%2 %3) [ID: %4]',
       logPlayerSelectedManual: 'Player selected: %1 (%2 %3) [manual mode]',
       logManualNeedName: "⚠ Type the player's name.",
       logManualNeedRating: "⚠ Type the player's OVR.",
       logManualNeedPosition: "⚠ Type the player's position.",
       logManualBadRating: '⚠ Invalid OVR. It must be a number between 40 and 99.',
-      logScanOrient: 'To scan: open Evolutions → pick an evolution → click "Search" → then scan.',
       logLangChanged: 'Language switched to English.',
       logEmergencyStop: '[PS Lab Assist] Emergency stop activated.',
 
@@ -261,13 +236,6 @@
       overlayStepProgress: '%1 / %2 — %3',
       overlayStepDone: 'Done. %1 evolution(s) applied.',
 
-      scanProgressOpenFirst: '⚠ First open an evolution and press "Search".',
-      scanProgressWaiting: 'Waiting for cards to load…',
-      scanProgressCardsFailed: '⚠ Cards did not load. Try again.',
-      scanProgressScanning: 'Scanning… %1 players (page %2)',
-      scanProgressNoneFound: '⚠ No players found. Is the eligible list open?',
-      scanProgressDone: '✓ %1 players found.',
-      scanProgressOpenAndSearch: '⚠ Open an evolution and press "Search" first.',
     },
   };
 
@@ -543,6 +511,14 @@
     const list = findCandidateList();
     if (!list) return null;
     return Array.from(list.querySelectorAll('.rating')).map(e => e.textContent.trim()).join(',');
+  }
+
+  // Firma de cambio para la lista de tiles de evolución (no la de
+  // jugadores elegibles) — se usa para detectar si un clic en "Next"
+  // efectivamente cambió de página en la pantalla de selección de tile.
+  function evoTilesSignature() {
+    return Array.from(document.querySelectorAll('h1.ut-academy-slot-tile-view--title'))
+      .map(h => h.textContent.trim()).join(',');
   }
 
   function beep() {
@@ -920,6 +896,10 @@
       return Array.from(document.querySelectorAll('h1.ut-academy-slot-tile-view--title'))
         .find(h => h.textContent.trim() === title && isVisible(h));
     }
+
+    // Primero intentamos scroll dentro de la lista (esto cubre el caso con
+    // Paletools, donde suele haber muchos más tiles visibles de una vez,
+    // o cualquier variante donde la lista sí scrollee internamente).
     list.scrollTop = 0;
     list.dispatchEvent(new Event('scroll', { bubbles: true }));
     await sleep(250);
@@ -937,6 +917,33 @@
       lastTop = list.scrollTop;
       steps++;
     }
+
+    // Si el scroll no encontró nada, probamos paginar con "Next": sin
+    // Paletools, los tiles de PlayStyles vienen repartidos en páginas
+    // discretas (ej. 3 páginas de 12 cada una) en vez de una lista larga
+    // scrolleable. El botón "Next" en este contexto es el mismo que se usa
+    // más adelante para paginar la lista de jugadores elegibles — acá
+    // estamos en la pantalla de selección de tile, así que es seguro
+    // asumir que cualquier "Next" visible en este punto pertenece a esta
+    // paginación de tiles.
+    let pageAttempts = 0;
+    while (pageAttempts < 10) {
+      if (!queueActive) return null;
+      const nextBtn = findButtonByExactText('Next');
+      if (!nextBtn) break;
+      const sigBefore = evoTilesSignature();
+      simulateRealClick(nextBtn);
+      await sleep(450);
+      if (evoTilesSignature() === sigBefore) {
+        // Dar un poco más de margen por si la página tardó en renderizar
+        await sleep(350);
+        if (evoTilesSignature() === sigBefore) break;
+      }
+      found = lookForTitle();
+      if (found) return found;
+      pageAttempts++;
+    }
+
     return null;
   }
 
@@ -1268,13 +1275,9 @@
     const plusChecked  = getCheckedValues('pslab-plusList');
     const whiteChecked = getCheckedValues('pslab-whiteList');
 
-    // Validar que escanearon y seleccionaron un jugador del picker
+    // Validar que se confirmó un jugador con el formulario manual
     if (!selectedPlayer) {
-      if (scannedPlayers.length === 0) {
-        queueLog(t('logNeedScanFirst'));
-      } else {
-        queueLog(t('logNeedSelectPlayer'));
-      }
+      queueLog(t('logNeedSelectPlayer'));
       return;
     }
     if (plusChecked.length === 0 && whiteChecked.length === 0) { queueLog(t('logNeedAtLeastOnePS')); return; }
@@ -1767,6 +1770,19 @@
       color: rgba(251,191,36,0.6);
     }
 
+    /* ── Aviso de conflicto con Paletools ── */
+    #psLabAssistPanel .pslab-paletools-warning {
+      font-size: 10px;
+      line-height: 1.4;
+      color: #fca5a5;
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.25);
+      border-radius: 8px;
+      padding: 7px 9px;
+      margin-bottom: 10px;
+    }
+    #psLabAssistPanel .pslab-paletools-warning strong { color: #f87171; font-weight: 700; }
+
     /* ── Botones ── */
     #psLabAssistPanel .pslab-btns {
       display: grid;
@@ -2093,106 +2109,7 @@
     #pslab-player-picker {
       margin-bottom: 12px;
     }
-    #pslab-scan-btn {
-      width: 100%;
-      background: rgba(255,255,255,0.04);
-      border: 1px dashed rgba(46,230,168,0.3);
-      color: #2ee6a8;
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .15s, border-color .15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-    #pslab-scan-btn:hover { background: rgba(46,230,168,0.07); border-color: rgba(46,230,168,0.5); }
-    #pslab-scan-btn:disabled { opacity: 0.4; cursor: default; }
-    #pslab-scan-progress {
-      font-size: 10px;
-      color: #64748b;
-      text-align: center;
-      margin-top: 5px;
-      min-height: 14px;
-      display: none;
-    }
-    #pslab-scan-progress.visible { display: block; }
 
-    /* Buscador + dropdown */
-    #pslab-player-search-wrap {
-      display: none;
-      margin-top: 8px;
-      position: relative;
-    }
-    #pslab-player-search-wrap.visible { display: block; }
-    #pslab-player-search {
-      width: 100%;
-      background: rgba(255,255,255,0.04);
-      color: #f1f5f9;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 12px;
-      font-family: inherit;
-      transition: border-color .2s;
-    }
-    #pslab-player-search::placeholder { color: #475569; }
-    #pslab-player-search:focus { outline: none; border-color: rgba(46,230,168,0.5); }
-    #pslab-player-dropdown {
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0; right: 0;
-      background: #0f1219;
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 1000001;
-      display: none;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      scrollbar-width: thin;
-      scrollbar-color: #1e293b transparent;
-    }
-    #pslab-player-dropdown.visible { display: block; }
-    .pslab-dropdown-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 10px;
-      cursor: pointer;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      transition: background .1s;
-    }
-    .pslab-dropdown-item:last-child { border-bottom: none; }
-    .pslab-dropdown-item:hover { background: rgba(46,230,168,0.07); }
-    .pslab-dropdown-item.selected { background: rgba(46,230,168,0.12); }
-    .pslab-dropdown-rating {
-      font-size: 13px;
-      font-weight: 700;
-      color: #fff;
-      min-width: 26px;
-      text-align: center;
-    }
-    .pslab-dropdown-name {
-      flex: 1;
-      font-size: 11px;
-      font-weight: 600;
-      color: #e2e8f0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .pslab-dropdown-meta {
-      font-size: 9.5px;
-      color: #475569;
-      text-align: right;
-      line-height: 1.4;
-      flex-shrink: 0;
-    }
     /* Jugador seleccionado — tarjeta resumen */
     #pslab-selected-player {
       display: none;
@@ -2255,39 +2172,10 @@
       transition: none !important;
     }
 
-    /* ── Tabs de modo de selección de jugador ── */
-    #pslab-mode-tabs {
-      display: flex;
-      gap: 4px;
+    /* ── Formulario de jugador (modo manual) ── */
+    #pslab-manual-wrap {
       margin-bottom: 8px;
     }
-    .pslab-mode-tab {
-      flex: 1;
-      padding: 5px 4px;
-      font-size: 10px;
-      font-weight: 600;
-      font-family: inherit;
-      text-align: center;
-      border-radius: 6px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.03);
-      color: #64748b;
-      cursor: pointer;
-      transition: background .15s, color .15s, border-color .15s;
-      line-height: 1.3;
-    }
-    .pslab-mode-tab:hover { background: rgba(255,255,255,0.06); color: #94a3b8; }
-    .pslab-mode-tab.active {
-      background: rgba(46,230,168,0.1);
-      border-color: rgba(46,230,168,0.4);
-      color: #2ee6a8;
-    }
-
-    /* ── Modo manual: campos de texto ── */
-    #pslab-manual-wrap {
-      display: none;
-    }
-    #pslab-manual-wrap.visible { display: block; }
     .pslab-manual-fields {
       display: grid;
       grid-template-columns: 1fr 52px 64px;
@@ -2406,24 +2294,8 @@
 
     <div id="pslab-player-picker">
 
-      <!-- Tabs de modo -->
-      <div id="pslab-mode-tabs">
-        <button class="pslab-mode-tab active" data-mode="paletools">${t('tabPaletools')}</button>
-        <button class="pslab-mode-tab" data-mode="manual">${t('tabManual')}</button>
-      </div>
-
-      <!-- Modo Paletools: escaneo de club -->
-      <div id="pslab-paletools-wrap">
-        <button id="pslab-scan-btn">${t('scanBtn')}</button>
-        <div id="pslab-scan-progress"></div>
-        <div id="pslab-player-search-wrap">
-          <input type="text" id="pslab-player-search" placeholder="${t('searchPlaceholder')}" autocomplete="off">
-          <div id="pslab-player-dropdown"></div>
-        </div>
-      </div>
-
       <!-- Modo manual: nombre + rating + posición -->
-      <div id="pslab-manual-wrap">
+      <div id="pslab-manual-wrap" class="visible">
         <div class="pslab-manual-fields">
           <input type="text"   id="pslab-manual-name"     placeholder="${t('manualNamePlaceholder')}" autocomplete="off">
           <input type="number" id="pslab-manual-rating"   placeholder="OVR" min="40" max="99" autocomplete="off">
@@ -2433,7 +2305,7 @@
         <button id="pslab-manual-confirm-btn">${t('manualConfirmBtn')}</button>
       </div>
 
-      <!-- Tarjeta resumen del jugador seleccionado (compartida entre modos) -->
+      <!-- Tarjeta resumen del jugador seleccionado -->
       <div id="pslab-selected-player">
         <div id="pslab-selected-player-rating"></div>
         <div id="pslab-selected-player-info">
@@ -2479,6 +2351,10 @@
     </div>
 
     <div class="pslab-divider"></div>
+
+    <div class="pslab-paletools-warning">
+      ${t('paletoolsWarning')}
+    </div>
 
     <div class="pslab-autoconfirm">
       <label class="pslab-autoconfirm-toggle">
@@ -2859,22 +2735,8 @@
   }
 
 
-  // ─── ESCÁNER DE CLUB Y PICKER DE JUGADOR ──────────────────────────────────
-  let scannedPlayers = [];   // [{ defId, name, rating, position, league }]
-  let selectedPlayer = null; // el elegido por el usuario
-
-  // Lee los datos de una tarjeta directamente del DOM sin hacer clic.
-  function readCardData(li) {
-    const defId = li.querySelector('[data-definition-id]')
-      ? li.querySelector('[data-definition-id]').dataset.definitionId
-      : null;
-    const name     = li.querySelector('.name')     ? li.querySelector('.name').textContent.trim()     : '';
-    const rating   = li.querySelector('.rating')   ? li.querySelector('.rating').textContent.trim()   : '';
-    const position = li.querySelector('.position') ? li.querySelector('.position').textContent.trim() : '';
-    const leagueEl = li.querySelector('.league');
-    const league   = leagueEl ? leagueEl.textContent.trim() : '';
-    return defId && name ? { defId, name, rating, position, league } : null;
-  }
+  // ─── PICKER DE JUGADOR (MODO MANUAL) ──────────────────────────────────────
+  let selectedPlayer = null; // el confirmado por el usuario en el formulario
 
   // Lee solo los ratings de todas las tarjetas visibles en la página actual,
   // sin requerir defId ni hacer clic. Se usa para decidir si conviene saltar
@@ -2897,130 +2759,18 @@
   // Espera a que las tarjetas de la página actual tengan su defId cargado.
   // El canvas y el data-definition-id se renderizan de forma asíncrona,
   // así que sondeamos hasta que al menos la primera tarjeta lo tenga.
+  // Espera a que las tarjetas de la lista actual tengan datos legibles
+  // (al menos el rating). Antes dependía de [data-definition-id], que solo
+  // existe con Paletools activo — como ya no usamos Paletools durante la
+  // cola, verificamos por .rating, que siempre está presente en el DOM
+  // nativo de EA.
   async function waitForCardsLoaded() {
     return await waitFor(() => {
       const first = document.querySelector('li.listFUTItem');
       if (!first) return false;
-      const defEl = first.querySelector('[data-definition-id]');
-      return defEl && defEl.dataset.definitionId ? true : false;
+      const ratingEl = first.querySelector('.rating');
+      return ratingEl && ratingEl.textContent.trim() ? true : false;
     }, { timeout: 5000, interval: 120 });
-  }
-
-  async function scanClub() {
-    const scanBtn      = document.getElementById('pslab-scan-btn');
-    const scanProgress = document.getElementById('pslab-scan-progress');
-
-    if (!findCandidateList()) {
-      queueLog(t('logScanNeedSearch'));
-      scanProgress.textContent = t('scanProgressOpenFirst');
-      scanProgress.classList.add('visible');
-      return;
-    }
-
-    scanBtn.disabled = true;
-    scannedPlayers = [];
-    selectedPlayer = null;
-    updateSelectedPlayerUI();
-    scanProgress.classList.add('visible');
-    scanProgress.textContent = t('scanProgressWaiting');
-
-    // Esperar que el primer defId esté disponible antes de empezar
-    const ready = await waitForCardsLoaded();
-    if (!ready) {
-      scanProgress.textContent = t('scanProgressCardsFailed');
-      scanBtn.disabled = false;
-      return;
-    }
-
-    let pageIndex = 0;
-    const MAX_PAGES = 80;
-
-    while (pageIndex < MAX_PAGES) {
-      const list = findCandidateList();
-      if (!list) break;
-
-      // Esperar que la página actual tenga defIds disponibles
-      await waitForCardsLoaded();
-      // Pausa extra para que terminen de renderizarse todas las tarjetas
-      await sleep(200);
-
-      const cards = Array.from(list.querySelectorAll('li.listFUTItem'));
-      for (const card of cards) {
-        const data = readCardData(card);
-        if (data && !scannedPlayers.find(p => p.defId === data.defId)) {
-          scannedPlayers.push(data);
-        }
-      }
-
-      scanProgress.textContent = t('scanProgressScanning', scannedPlayers.length, pageIndex + 1);
-
-      const nextBtn = findButtonByExactText('Next');
-      if (!nextBtn) break;
-      const sigBefore = gridSignature();
-      simulateRealClick(nextBtn);
-      // Esperar a que la nueva página cargue sus tarjetas
-      await sleep(350);
-      await waitForCardsLoaded();
-      if (gridSignature() === sigBefore) break;
-      pageIndex++;
-    }
-
-    scannedPlayers.sort((a, b) => parseInt(b.rating) - parseInt(a.rating));
-
-    if (scannedPlayers.length === 0) {
-      scanProgress.textContent = t('scanProgressNoneFound');
-      scanBtn.disabled = false;
-      return;
-    }
-
-    scanProgress.textContent = t('scanProgressDone', scannedPlayers.length);
-    scanBtn.disabled = false;
-    scanBtn.textContent = t('scanBtnRescan');
-
-    document.getElementById('pslab-player-search-wrap').classList.add('visible');
-    document.getElementById('pslab-player-search').value = '';
-    renderDropdown('');
-    queueLog(t('logScanComplete', scannedPlayers.length));
-  }
-
-  function renderDropdown(query) {
-    const dropdown = document.getElementById('pslab-player-dropdown');
-    if (!dropdown) return;
-
-    const q = normalizeName(query);
-    const filtered = q
-      ? scannedPlayers.filter(p =>
-          normalizeName(p.name).includes(q) ||
-          normalizeName(p.position).includes(q) ||
-          normalizeName(p.league).includes(q) ||
-          p.rating.includes(q)
-        )
-      : scannedPlayers;
-
-    if (filtered.length === 0) {
-      dropdown.innerHTML = '<div class="pslab-dropdown-empty">Sin resultados</div>';
-      dropdown.classList.add('visible');
-      return;
-    }
-
-    dropdown.innerHTML = filtered.slice(0, 60).map(p => `
-      <div class="pslab-dropdown-item" data-defid="${p.defId}">
-        <div class="pslab-dropdown-rating">${p.rating}</div>
-        <div class="pslab-dropdown-name">${p.name}</div>
-        <div class="pslab-dropdown-meta">${p.position}<br>${p.league}</div>
-      </div>
-    `).join('');
-
-    dropdown.querySelectorAll('.pslab-dropdown-item').forEach(item => {
-      item.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        const defId = item.dataset.defid;
-        const player = scannedPlayers.find(p => p.defId === defId);
-        if (player) selectPlayer(player);
-      });
-    });
-
-    dropdown.classList.add('visible');
   }
 
   function selectPlayer(player) {
@@ -3028,14 +2778,7 @@
     // Limpiar caché de posición al cambiar de jugador
     Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
     updateSelectedPlayerUI();
-    // Limpiar el dropdown de Paletools si aplica
-    const dd = document.getElementById('pslab-player-dropdown');
-    if (dd) dd.classList.remove('visible');
-    const ps = document.getElementById('pslab-player-search');
-    if (ps) ps.value = '';
-    queueLog(player.defId
-      ? t('logPlayerSelectedPaletools', player.name, player.rating, player.position, player.defId)
-      : t('logPlayerSelectedManual', player.name, player.rating, player.position));
+    queueLog(t('logPlayerSelectedManual', player.name, player.rating, player.position));
   }
 
   function updateSelectedPlayerUI() {
@@ -3053,33 +2796,6 @@
     document.getElementById('pslab-selected-player-meta').textContent = meta;
     card.classList.add('visible');
   }
-
-  // ─── LÓGICA DE TABS DE MODO ───────────────────────────────────────────────
-  let pickerMode = 'paletools'; // 'paletools' | 'manual'
-
-  function switchPickerMode(mode) {
-    pickerMode = mode;
-    document.querySelectorAll('.pslab-mode-tab').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
-    const ptWrap  = document.getElementById('pslab-paletools-wrap');
-    const manWrap = document.getElementById('pslab-manual-wrap');
-    if (mode === 'paletools') {
-      ptWrap.style.display  = 'block';
-      manWrap.classList.remove('visible');
-    } else {
-      ptWrap.style.display  = 'none';
-      manWrap.classList.add('visible');
-    }
-    // Al cambiar de modo, limpiar el jugador seleccionado
-    selectedPlayer = null;
-    Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
-    updateSelectedPlayerUI();
-  }
-
-  document.querySelectorAll('.pslab-mode-tab').forEach(btn => {
-    btn.addEventListener('click', () => switchPickerMode(btn.dataset.mode));
-  });
 
   // ─── MODO MANUAL: confirmar jugador ───────────────────────────────────────
   function confirmManualPlayer() {
@@ -3110,45 +2826,10 @@
     });
   });
 
-  // ─── EVENTOS DEL PICKER (modo Paletools) ──────────────────────────────────
-  document.getElementById('pslab-scan-btn').addEventListener('click', () => {
-    if (!findCandidateList()) {
-      queueLog(t('logScanOrient'));
-      const sp = document.getElementById('pslab-scan-progress');
-      sp.textContent = t('scanProgressOpenAndSearch');
-      sp.classList.add('visible');
-      return;
-    }
-    scanClub();
-  });
-
-  document.getElementById('pslab-player-search').addEventListener('focus', () => {
-    if (scannedPlayers.length > 0) {
-      renderDropdown(document.getElementById('pslab-player-search').value);
-    }
-  });
-
-  document.getElementById('pslab-player-search').addEventListener('input', (e) => {
-    renderDropdown(e.target.value);
-  });
-
-  document.getElementById('pslab-player-search').addEventListener('blur', () => {
-    setTimeout(() => {
-      const dd = document.getElementById('pslab-player-dropdown');
-      if (dd) dd.classList.remove('visible');
-    }, 150);
-  });
-
   document.getElementById('pslab-selected-player-clear').addEventListener('click', () => {
     selectedPlayer = null;
     Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
     updateSelectedPlayerUI();
-    // Mostrar el bloque correspondiente al modo activo
-    if (pickerMode === 'paletools') {
-      document.getElementById('pslab-player-search-wrap').classList.add('visible');
-    } else {
-      document.getElementById('pslab-manual-wrap').classList.add('visible');
-    }
   });
 
   // ─── DRAG & DROP ─────────────────────────────────────────────────────────
@@ -3310,5 +2991,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v2.15.0: revertido el fix de navegación de v2.14.0 — causaba un bug peor, entraba a evoluciones incorrectas). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v3.0.0: eliminado el modo Paletools — el choque entre ambos scripts causaba el bug de navegación. Solo modo manual, con paginación de tiles corregida). Idioma actual: ${currentLang}.`);
 })();
