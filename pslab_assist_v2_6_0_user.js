@@ -14,10 +14,10 @@
 
   // Estado completamente en memoria — no se persiste en localStorage
   const state = {
-    panelVisible: true,
+    panelVisible: false,
     queuePlusSelected: [],
     queueWhiteSelected: [],
-    autoConfirmFinal: false,
+    autoConfirmFinal: true,
   };
 
   // ─── IDIOMA ─────────────────────────────────────────────────────────────
