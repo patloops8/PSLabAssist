@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      2.12.0
+// @version      2.13.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v2.12.0',
+      panelSubtitle: 'EAFC 26 · v2.13.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       tabPaletools: 'Con Paletools',
       tabManual: 'Sin Paletools',
@@ -109,6 +109,12 @@
       logMaxWhite: 'Máximo %1 PlayStyles blancos.',
       logStartingQueue: 'Iniciando cola para "%1" con %2 evolución(es).',
       logQueueStoppedByUser: 'Cola detenida por el usuario.',
+      logItemTimeout: '⚠ "%1" tardó más de %2 minuto(s) sin resolverse. Cola detenida por seguridad.',
+      logProgressSaved: 'Progreso guardado: %1 evolución(es) pendiente(s). Podés continuar con "Continuar cola pendiente".',
+      logRetryingFailed: 'Reintentando %1 evolución(es) que habían fallado…',
+      logResumingQueue: 'Continuando cola: %1 evolución(es) pendiente(s)…',
+      retryFailedBtn: '↺ Reintentar fallidos (%1)',
+      resumeBtn: '▶ Continuar cola pendiente (%1)',
       logPresetSaveFail: '⚠ No se pudo guardar el preset (localStorage no disponible).',
       logPresetNeedName: '⚠ Escribe un nombre para el preset.',
       logPresetNeedPS: '⚠ Marca al menos un PlayStyle antes de guardar el preset.',
@@ -135,6 +141,7 @@
       statusProcessing: 'Procesando %1/%2: %3',
       statusQueueFinished: 'Cola finalizada.',
       statusStoppedByUser: 'Detenida por el usuario.',
+      statusStoppedTimeout: 'Detenida por tiempo de espera agotado.',
 
       overlayStepGoingDirect: 'Yendo directo a página %1…',
       overlayStepScanningCards: 'Revisando %2 tarjeta(s) en página %1…',
@@ -150,7 +157,7 @@
       scanProgressOpenAndSearch: '⚠ Abre una evolución y presiona "Search" primero.',
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v2.12.0',
+      panelSubtitle: 'EAFC 26 · v2.13.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       tabPaletools: 'With Paletools',
       tabManual: 'Without Paletools',
@@ -215,6 +222,12 @@
       logMaxWhite: 'Maximum %1 white PlayStyles.',
       logStartingQueue: 'Starting queue for "%1" with %2 evolution(s).',
       logQueueStoppedByUser: 'Queue stopped by user.',
+      logItemTimeout: '⚠ "%1" took longer than %2 minute(s) without resolving. Queue stopped for safety.',
+      logProgressSaved: 'Progress saved: %1 pending evolution(s). You can continue with "Continue pending queue".',
+      logRetryingFailed: 'Retrying %1 evolution(s) that had failed…',
+      logResumingQueue: 'Continuing queue: %1 pending evolution(s)…',
+      retryFailedBtn: '↺ Retry failed (%1)',
+      resumeBtn: '▶ Continue pending queue (%1)',
       logPresetSaveFail: '⚠ Could not save the preset (localStorage unavailable).',
       logPresetNeedName: '⚠ Type a name for the preset.',
       logPresetNeedPS: '⚠ Select at least one PlayStyle before saving the preset.',
@@ -241,6 +254,7 @@
       statusProcessing: 'Processing %1/%2: %3',
       statusQueueFinished: 'Queue finished.',
       statusStoppedByUser: 'Stopped by user.',
+      statusStoppedTimeout: 'Stopped due to timeout.',
 
       overlayStepGoingDirect: 'Going direct to page %1…',
       overlayStepScanningCards: 'Checking %2 card(s) on page %1…',
@@ -562,6 +576,9 @@
   }, true);
 
   let queueActive = false;
+  let queueStoppedReason = null; // 'user' | 'timeout' | null
+  let pendingProgress = null;    // { items: [...], targetPlayer, doneCount, total } | null
+  const ITEM_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos máximo por evolución
   const TABS_TO_TRY = ['PlayStyles Lab', 'PlayStyles+ Lab'];
 
   function queueLog(msg) {
@@ -579,8 +596,12 @@
   function setQueueButtonsRunning(running) {
     const startBtn = document.getElementById('pslab-queueStart');
     const stopBtn = document.getElementById('pslab-queueStop');
+    const resumeBtn = document.getElementById('pslab-resumeBtn');
+    const retryBtn = document.getElementById('pslab-retryFailedBtn');
     if (startBtn) startBtn.disabled = running;
     if (stopBtn) stopBtn.disabled = !running;
+    if (resumeBtn) resumeBtn.disabled = running;
+    if (retryBtn) retryBtn.disabled = running;
   }
 
   // Cache de posición: { targetNorm -> { pageIndex, cardIndex } }
@@ -1100,30 +1121,95 @@
     await sleep(700);
   }
 
-  async function runQueue(items) {
+  async function runQueue(items, isResume) {
     queueActive = true;
+    queueStoppedReason = null;
     setQueueButtonsRunning(true);
     overlayShow(items);
-    let doneCount = 0;
+    if (!isResume) {
+      clearCardResults();
+    } else {
+      // Al reanudar, marcar visualmente lo que ya se aplicó en la corrida anterior
+      items.filter(i => i.status === 'done').forEach(i => markCardResult(i.title, 'done'));
+    }
+    let doneCount = items.filter(i => i.status === 'done').length;
+    let timedOutItemIndex = -1;
+
     for (let i = 0; i < items.length; i++) {
       if (!queueActive) break;
+      if (items[i].status === 'done') continue; // ya aplicado en una corrida anterior (resume)
+
       setQueueStatus(t('statusProcessing', i + 1, items.length, items[i].title));
       overlaySetItemStatus(items[i].title, 'running');
       overlaySetStep(t('overlayStepProgress', i + 1, items.length, items[i].title));
       overlayShowConfirmHint(false);
+
+      // Timeout de seguridad por evolución: si runQueueItem no resuelve en
+      // ITEM_TIMEOUT_MS, lo tratamos como un "stop" — se corta la cola y se
+      // guarda el progreso pendiente, igual que si el usuario hubiera
+      // presionado Detener. Esto evita que un cuelgue silencioso deje la
+      // cola corriendo indefinidamente sin que nadie se entere.
+      let timedOut = false;
+      const timeoutId = setTimeout(() => {
+        timedOut = true;
+        queueActive = false;
+      }, ITEM_TIMEOUT_MS);
+
       await runQueueItem(items[i]);
+      clearTimeout(timeoutId);
+
+      if (timedOut) {
+        items[i].status = 'error';
+        timedOutItemIndex = i;
+        markCardResult(items[i].title, 'error');
+        queueStoppedReason = 'timeout';
+        break;
+      }
+
       overlaySetItemStatus(items[i].title, items[i].status);
+      markCardResult(items[i].title, items[i].status);
       if (items[i].status === 'done') doneCount++;
       overlaySetProgress(i + 1, items.length);
     }
+
+    const stoppedEarly = queueActive === false && queueStoppedReason !== null;
     queueActive = false;
     setQueueButtonsRunning(false);
+
+    if (queueStoppedReason === 'timeout') {
+      const stuckTitle = items[timedOutItemIndex] ? items[timedOutItemIndex].title : '?';
+      queueLog(t('logItemTimeout', stuckTitle, Math.round(ITEM_TIMEOUT_MS / 60000)));
+      setQueueStatus(t('statusStoppedTimeout'));
+    } else if (queueStoppedReason === 'user') {
+      queueLog(t('logQueueStoppedByUser'));
+      setQueueStatus(t('statusStoppedByUser'));
+    }
+
+    const pending = items.filter(i => i.status !== 'done');
+    if (stoppedEarly && pending.length > 0) {
+      // Guardamos el progreso para poder retomarlo con "Continuar cola pendiente"
+      pendingProgress = { items, doneCount, total: items.length };
+      queueLog(t('logProgressSaved', pending.length));
+      updateResumeButtonVisibility();
+      overlayShowConfirmHint(false);
+      setTimeout(() => overlayHide(), 1500);
+      return;
+    }
+
+    // Cola terminó su recorrido completo (sin detenerse a mitad de camino)
+    pendingProgress = null;
+    updateResumeButtonVisibility();
     setQueueStatus(t('statusQueueFinished'));
     queueLog(t('logQueueFinished'));
     queueLog(t('logQueueSummary', doneCount, items.length));
     overlaySetStep(t('overlayStepDone', doneCount));
     overlayShowConfirmHint(false);
-    // Cerrar overlay automáticamente después de 3 s
+
+    // Ofrecer reintentar fallidos si quedó alguno
+    const failed = items.filter(i => i.status !== 'done');
+    lastFailedItems = failed.length > 0 ? failed : null;
+    updateRetryButtonVisibility();
+
     setTimeout(() => overlayHide(), 3000);
   }
 
@@ -1131,6 +1217,50 @@
     const container = document.getElementById(containerId);
     if (!container) return [];
     return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+  }
+
+  let lastFailedItems = null;
+
+  function updateRetryButtonVisibility() {
+    const btn = document.getElementById('pslab-retryFailedBtn');
+    if (!btn) return;
+    if (lastFailedItems && lastFailedItems.length > 0) {
+      btn.textContent = t('retryFailedBtn', lastFailedItems.length);
+      btn.style.display = 'block';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  function updateResumeButtonVisibility() {
+    const btn = document.getElementById('pslab-resumeBtn');
+    if (!btn) return;
+    if (pendingProgress && pendingProgress.items.some(i => i.status !== 'done')) {
+      const pendingCount = pendingProgress.items.filter(i => i.status !== 'done').length;
+      btn.textContent = t('resumeBtn', pendingCount);
+      btn.style.display = 'block';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  function retryFailedFromUI() {
+    if (queueActive || !lastFailedItems || lastFailedItems.length === 0) return;
+    const itemsToRetry = lastFailedItems.map(i => ({ ...i, status: 'pending' }));
+    lastFailedItems = null;
+    updateRetryButtonVisibility();
+    Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
+    queueLog(t('logRetryingFailed', itemsToRetry.length));
+    runQueue(itemsToRetry, false);
+  }
+
+  function resumeQueueFromUI() {
+    if (queueActive || !pendingProgress) return;
+    const items = pendingProgress.items;
+    pendingProgress = null;
+    updateResumeButtonVisibility();
+    queueLog(t('logResumingQueue', items.filter(i => i.status !== 'done').length));
+    runQueue(items, true);
   }
 
   function startQueueFromUI() {
@@ -1156,20 +1286,20 @@
 
     const items = plusChecked.map(title => ({ title, targetPlayer: selectedPlayer, rawTargetName: selectedPlayer.name, tab: 'PlayStyles+ Lab', status: 'pending' }))
       .concat(whiteChecked.map(title => ({ title, targetPlayer: selectedPlayer, rawTargetName: selectedPlayer.name, tab: 'PlayStyles Lab', status: 'pending' })));
-    // Limpiar caché de posición al iniciar cola nueva
+    // Limpiar caché de posición y progreso pendiente anterior al iniciar cola nueva
     Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
+    pendingProgress = null;
+    lastFailedItems = null;
+    updateResumeButtonVisibility();
+    updateRetryButtonVisibility();
     queueLog(t('logStartingQueue', selectedPlayer.name, items.length));
-    runQueue(items);
+    runQueue(items, false);
   }
 
   function stopQueueFromUI() {
     if (!queueActive) return;
+    queueStoppedReason = 'user';
     queueActive = false;
-    queueLog(t('logQueueStoppedByUser'));
-    setQueueStatus(t('statusStoppedByUser'));
-    setQueueButtonsRunning(false);
-    overlayShowConfirmHint(false);
-    setTimeout(() => overlayHide(), 1200);
   }
 
   // ─── ESTILOS ──────────────────────────────────────────────────────────────
@@ -1420,6 +1550,54 @@
       pointer-events: none;
     }
 
+    /* Estado: PlayStyle aplicado correctamente durante la corrida actual */
+    #psLabAssistPanel .pslab-card.pslab-card-applied {
+      background: rgba(46,230,168,0.18) !important;
+      border-color: #2ee6a8 !important;
+      box-shadow: 0 0 0 1px rgba(46,230,168,0.3);
+    }
+    #psLabAssistPanel .pslab-card.pslab-card-applied::after {
+      content: '✓';
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #2ee6a8;
+      color: #08110d;
+      font-size: 9px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    /* Estado: PlayStyle falló/se omitió durante la corrida actual */
+    #psLabAssistPanel .pslab-card.pslab-card-failed {
+      background: rgba(248,113,113,0.14) !important;
+      border-color: rgba(248,113,113,0.55) !important;
+      box-shadow: 0 0 0 1px rgba(248,113,113,0.25);
+    }
+    #psLabAssistPanel .pslab-card.pslab-card-failed::after {
+      content: '✗';
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f87171;
+      color: #2b0a0a;
+      font-size: 9px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
     /* Icono */
     #psLabAssistPanel .pslab-card-icon {
       width: 34px;
@@ -1617,6 +1795,32 @@
       background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
       color: #fff;
     }
+
+    /* ── Botones secundarios: continuar / reintentar ── */
+    #psLabAssistPanel .pslab-secondary-btn {
+      width: 100%;
+      display: block;
+      border: 1px solid rgba(255,195,64,0.4);
+      background: rgba(255,195,64,0.08);
+      color: #ffc340;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background .15s, transform .1s;
+      letter-spacing: .2px;
+    }
+    #psLabAssistPanel .pslab-secondary-btn:hover { background: rgba(255,195,64,0.16); }
+    #psLabAssistPanel .pslab-secondary-btn:active { transform: scale(0.98); }
+    #psLabAssistPanel #pslab-retryFailedBtn {
+      border-color: rgba(248,113,113,0.4);
+      background: rgba(248,113,113,0.08);
+      color: #f87171;
+    }
+    #psLabAssistPanel #pslab-retryFailedBtn:hover { background: rgba(248,113,113,0.16); }
 
     /* ── Status ── */
     #psLabAssistPanel .pslab-status {
@@ -2287,6 +2491,9 @@
       </div>
     </div>
 
+    <button id="pslab-resumeBtn" class="pslab-secondary-btn" style="display:none;"></button>
+    <button id="pslab-retryFailedBtn" class="pslab-secondary-btn" style="display:none;"></button>
+
     <div class="pslab-btns">
       <button class="pslab-btn pslab-btn-start" id="pslab-queueStart">${t('startBtn')}</button>
       <button class="pslab-btn pslab-btn-stop" id="pslab-queueStop" disabled>${t('stopBtn')}</button>
@@ -2343,6 +2550,25 @@
     if (isChecked) {
       cardEl.classList.add(group === 'plus' ? 'selected-plus' : 'selected-white');
     }
+  }
+
+  // Marca visualmente una tarjeta de PlayStyle según el resultado de su
+  // aplicación durante la corrida de la cola (✓ aplicado, ✗ falló). Se
+  // resetea automáticamente al iniciar una cola nueva.
+  function markCardResult(title, result) {
+    const card = document.querySelector(`.pslab-card[data-name="${CSS.escape(title)}"]`);
+    if (!card) return;
+    card.classList.remove('pslab-card-applied', 'pslab-card-failed');
+    if (result === 'done') {
+      card.classList.add('pslab-card-applied');
+    } else if (result === 'error' || result === 'notfound' || result === 'skipped') {
+      card.classList.add('pslab-card-failed');
+    }
+  }
+
+  function clearCardResults() {
+    document.querySelectorAll('.pslab-card-applied, .pslab-card-failed')
+      .forEach(c => c.classList.remove('pslab-card-applied', 'pslab-card-failed'));
   }
 
   function enforceChecklistLimits() {
@@ -2546,6 +2772,8 @@
   });
   document.getElementById('pslab-queueStart').addEventListener('click', startQueueFromUI);
   document.getElementById('pslab-queueStop').addEventListener('click', stopQueueFromUI);
+  document.getElementById('pslab-resumeBtn').addEventListener('click', resumeQueueFromUI);
+  document.getElementById('pslab-retryFailedBtn').addEventListener('click', retryFailedFromUI);
   toggleBtn.addEventListener('click', () => { state.panelVisible = true; applyPanelVisibility(); });
   document.getElementById('pslab-minimizeBtn').addEventListener('click', () => { state.panelVisible = false; applyPanelVisibility(); });
   document.addEventListener('keydown', (e) => {
@@ -2572,7 +2800,8 @@
   function overlayShow(items) {
     overlayItems = items.map(it => ({ ...it }));
     renderOverlayQueue();
-    overlaySetProgress(0, items.length);
+    const alreadyDone = items.filter(it => it.status === 'done').length;
+    overlaySetProgress(alreadyDone, items.length);
     document.getElementById('pslab-overlay-step').textContent = '';
     document.getElementById('pslab-overlay-confirm-hint').classList.remove('visible');
     overlay.classList.add('active');
@@ -3081,5 +3310,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v2.12.0: resumen final claro en el log — "X/Y evoluciones aplicadas correctamente"). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v2.13.0: timeout de seguridad por evolución, botones de continuar cola pendiente y reintentar fallidos, marcado visual de PS aplicados en la grilla). Idioma actual: ${currentLang}.`);
 })();
