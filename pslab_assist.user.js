@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      2.8.0
+// @version      2.10.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -14,10 +14,10 @@
 
   // Estado completamente en memoria — no se persiste en localStorage
   const state = {
-    panelVisible: true,
+    panelVisible: false,
     queuePlusSelected: [],
     queueWhiteSelected: [],
-    autoConfirmFinal: false,
+    autoConfirmFinal: true,
   };
 
   // ─── IDIOMA ─────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v2.8.0',
+      panelSubtitle: 'EAFC 26 · v2.10.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       tabPaletools: 'Con Paletools',
       tabManual: 'Sin Paletools',
@@ -89,6 +89,7 @@
       logSearching: 'Buscando a "%1" en "%2"...',
       logNotEligible: '"%1" no es elegible en "%2". Se omite.',
       logIdCheckFail: '⚠ Verificación de ID falló para "%1": ID esperado %2, encontrado %3. Se omite.',
+      logConfirmBtnRetry: '⚠ "Confirm Player" no apareció a tiempo para "%1" (intento %2/3). Reintentando…',
       logNoConfirmBtn: 'No apareció "Confirm Player" para "%1". Se omite.',
       logModalRetry: '⚠ El modal de confirmación no apareció a tiempo para "%1" (intento %2/3). Reintentando…',
       logNoModalAfterRetries: 'No apareció el modal de confirmación para "%1" tras 3 intentos. Se omite.',
@@ -146,7 +147,7 @@
       scanProgressOpenAndSearch: '⚠ Abre una evolución y presiona "Search" primero.',
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v2.8.0',
+      panelSubtitle: 'EAFC 26 · v2.10.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       tabPaletools: 'With Paletools',
       tabManual: 'Without Paletools',
@@ -191,6 +192,7 @@
       logSearching: 'Searching for "%1" in "%2"...',
       logNotEligible: '"%1" is not eligible in "%2". Skipping.',
       logIdCheckFail: '⚠ ID check failed for "%1": expected ID %2, found %3. Skipping.',
+      logConfirmBtnRetry: '⚠ "Confirm Player" did not appear in time for "%1" (attempt %2/3). Retrying…',
       logNoConfirmBtn: '"Confirm Player" did not appear for "%1". Skipping.',
       logModalRetry: '⚠ The confirmation modal did not appear in time for "%1" (attempt %2/3). Retrying…',
       logNoModalAfterRetries: 'The confirmation modal did not appear for "%1" after 3 attempts. Skipping.',
@@ -957,7 +959,21 @@
         return;
       }
     }
-    const confirmBtn = await waitFor(() => findButtonByExactText('Confirm Player'), { timeout: 5000 });
+    // Esperamos a que aparezca "Confirm Player" con reintentos: la primera
+    // evolución de la cola suele tardar más en este paso porque la app de
+    // EA todavía no tiene nada "calentado" en caché de render (recién
+    // cambió de tab, abrió el tile, cargó el grid). Un solo intento de 5s
+    // puede no alcanzar en ese momento puntual, aunque sí alcance en las
+    // evoluciones siguientes de la misma cola.
+    let confirmBtn = null;
+    for (let attempt = 0; attempt < 3 && !confirmBtn; attempt++) {
+      if (!queueActive) return;
+      confirmBtn = await waitFor(() => findButtonByExactText('Confirm Player'), { timeout: 5000 + attempt * 2000 });
+      if (!confirmBtn && attempt < 2) {
+        queueLog(t('logConfirmBtnRetry', item.title, attempt + 1));
+        await sleep(500);
+      }
+    }
     if (!queueActive) return;
     if (!confirmBtn) {
       item.status = 'error';
@@ -3041,5 +3057,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v2.8.0: verificación de jugador más robusta — más margen de espera, doble chequeo de estabilidad, ritmo de escaneo más generoso). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v2.10.0: reintentos para "Confirm Player" — tolera renders lentos, especialmente en el primer ítem de la cola). Idioma actual: ${currentLang}.`);
 })();
