@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      3.4.0
+// @version      3.5.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v3.4.0',
+      panelSubtitle: 'EAFC 26 · v3.5.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       manualNamePlaceholder: 'Nombre',
       manualPositionPlaceholder: 'Posición',
@@ -144,7 +144,7 @@
 
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v3.4.0',
+      panelSubtitle: 'EAFC 26 · v3.5.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       manualNamePlaceholder: 'Name',
       manualPositionPlaceholder: 'Position',
@@ -2861,6 +2861,10 @@
     selectedPlayer = player;
     // Limpiar caché de posición al cambiar de jugador
     Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
+    // Limpiar los marcadores visuales de PS aplicados/fallidos de la
+    // corrida anterior — si el usuario confirma otro jugador, el grid
+    // debe verse limpio para que no parezca que todo ya está seleccionado
+    clearCardResults();
     updateSelectedPlayerUI();
     queueLog(t('logPlayerSelectedManual', player.name, player.rating, player.position));
   }
@@ -2913,6 +2917,7 @@
   document.getElementById('pslab-selected-player-clear').addEventListener('click', () => {
     selectedPlayer = null;
     Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
+    clearCardResults();
     updateSelectedPlayerUI();
   });
 
@@ -3075,5 +3080,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v3.4.0: overlay sin blur durante toda la cola, para poder ver siempre qué pasa en la Web App). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v3.5.0: marcadores visuales de PS se limpian al confirmar un nuevo jugador durante toda la cola, para poder ver siempre qué pasa en la Web App). Idioma actual: ${currentLang}.`);
 })();
