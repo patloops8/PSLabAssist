@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      3.6.0
+// @version      4.0.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
-// @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
+// @match        https://www.ea.com/*ultimate-team/web-app*
 // @run-at       document-idle
 // @grant        none
 // ==/UserScript==
@@ -43,13 +43,17 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v3.6.0',
+      panelSubtitle: 'EAFC 26 · v4.0.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
-      manualNamePlaceholder: 'Nombre',
-      manualPositionPlaceholder: 'Posición',
-      manualNote: '⚠ Escribe el nombre <strong>tal como aparece en la carta</strong> (ej: si la carta dice "David", escribe "David", no "Jonathan David").',
-      manualConfirmBtn: '✓ Confirmar jugador',
       changePlayerTitle: 'Cambiar jugador',
+      scanBtn: '⟳ Cargar jugadores del club',
+      scanBtnRescan: '⟳ Recargar',
+      searchPlaceholder: 'Buscar jugador…',
+      scanProgressWaiting: 'Esperando que la Web App esté lista…',
+      scanProgressScanning: 'Cargando… %1 jugadores',
+      scanProgressNoneFound: '⚠ No se encontraron jugadores. ¿Estás en la sección Evolutions?',
+      scanProgressDone: '✓ %1 jugadores cargados.',
+      logScanComplete: 'Club cargado: %1 jugadores.',
       loadPresetTitle: 'Cargar preset seleccionado',
       deletePresetTitle: 'Borrar preset seleccionado',
       presetSelectDefault: '— Cargar preset —',
@@ -57,7 +61,6 @@
       presetSaveBtn: '💾 Guardar preset',
       autoConfirmLabel: 'Confirmar automáticamente',
       autoConfirmWarning: '⚠ Hace clic en "Ok" automáticamente. La carta queda intransferible sin pausa. Apagado por defecto.',
-      paletoolsWarning: '⚠ Si tienes Paletools instalado, <strong>apágalo</strong> antes de usar este script. Ambos a la vez pueden causar errores raros en la navegación de la Web App.',
       startBtn: '▶ Iniciar cola',
       stopBtn: '■ Detener',
       appliedLabel: '✓ Aplicadas:',
@@ -100,8 +103,16 @@
       logApplied: '✓ Aplicado "%1" a %2.',
       logCancelled: 'Cancelado "%1".',
       logQueueFinished: 'Cola finalizada.',
+      logApiReady: '✓ API de EA lista. Cargando club…',
+      logApiNotReady: '⚠ La API de EA no respondió. Abre la Web App y ve a Evolutions.',
+      logClubServiceUnavailable: '⚠ Servicio de club no disponible. Abre la Web App en Evolutions.',
+      logClubLoadFailed: '⚠ No se pudieron cargar los jugadores del club.',
+      logApplyingPS: 'Aplicando "%1" a %2…',
+      logApplyFailed: '✗ Error al aplicar "%1": %2',
+      logNoSlotId: '⚠ No se encontró el slotId para "%1". Verifica que el nombre esté en el catálogo.',
+      logMaxSlotsReached: '⚠ "%1": límite de slots activos alcanzado.',
       logQueueSummary: '✓ %1/%2 evolución(es) aplicada(s) correctamente.',
-      logNeedSelectPlayer: '⚠ Completa el formulario de jugador y presiona "Confirmar jugador" antes de iniciar la cola.',
+      logNeedSelectPlayer: '⚠ Selecciona un jugador del dropdown antes de iniciar la cola.',
       logNeedAtLeastOnePS: 'Marca al menos un PlayStyle.',
       logMaxPlus: 'Máximo %1 PlayStyles+.',
       logMaxWhite: 'Máximo %1 PlayStyles blancos.',
@@ -123,10 +134,6 @@
       logPresetLoaded: 'Preset "%1" cargado: %2 PS+ / %3 PS.',
       logPresetDeleted: 'Preset "%1" eliminado.',
       logPlayerSelectedManual: 'Jugador seleccionado: %1 (%2 %3) [modo manual]',
-      logManualNeedName: '⚠ Escribe el nombre del jugador.',
-      logManualNeedRating: '⚠ Escribe el OVR del jugador.',
-      logManualNeedPosition: '⚠ Escribe la posición del jugador.',
-      logManualBadRating: '⚠ OVR inválido. Debe ser un número entre 40 y 99.',
       logLangChanged: 'Idioma cambiado a Español.',
       logEmergencyStop: '[PS Lab Assist] Apagado de emergencia activado.',
 
@@ -144,13 +151,17 @@
 
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v3.6.0',
+      panelSubtitle: 'EAFC 26 · v4.0.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
-      manualNamePlaceholder: 'Name',
-      manualPositionPlaceholder: 'Position',
-      manualNote: '⚠ Type the name <strong>exactly as it appears on the card</strong> (e.g.: if the card says "David", type "David", not "Jonathan David").',
-      manualConfirmBtn: '✓ Confirm player',
       changePlayerTitle: 'Change player',
+      scanBtn: '⟳ Load club players',
+      scanBtnRescan: '⟳ Reload',
+      searchPlaceholder: 'Search player…',
+      scanProgressWaiting: 'Waiting for the Web App to be ready…',
+      scanProgressScanning: 'Loading… %1 players',
+      scanProgressNoneFound: '⚠ No players found. Are you in the Evolutions section?',
+      scanProgressDone: '✓ %1 players loaded.',
+      logScanComplete: 'Club loaded: %1 players.',
       loadPresetTitle: 'Load selected preset',
       deletePresetTitle: 'Delete selected preset',
       presetSelectDefault: '— Load preset —',
@@ -158,7 +169,6 @@
       presetSaveBtn: '💾 Save preset',
       autoConfirmLabel: 'Auto-confirm',
       autoConfirmWarning: '⚠ Automatically clicks "Ok". The card becomes untradeable with no pause. Off by default.',
-      paletoolsWarning: '⚠ If you have Paletools installed, <strong>turn it off</strong> before using this script. Both running together can cause odd navigation errors in the Web App.',
       startBtn: '▶ Start queue',
       stopBtn: '■ Stop',
       appliedLabel: '✓ Applied:',
@@ -200,8 +210,16 @@
       logApplied: '✓ Applied "%1" to %2.',
       logCancelled: 'Cancelled "%1".',
       logQueueFinished: 'Queue finished.',
+      logApiReady: '✓ EA API ready. Loading club…',
+      logApiNotReady: '⚠ EA API did not respond. Open the Web App and go to Evolutions.',
+      logClubServiceUnavailable: '⚠ Club service unavailable. Open the Web App on Evolutions.',
+      logClubLoadFailed: '⚠ Could not load club players.',
+      logApplyingPS: 'Applying "%1" to %2…',
+      logApplyFailed: '✗ Error applying "%1": %2',
+      logNoSlotId: '⚠ No slotId found for "%1". Check that the name is in the catalog.',
+      logMaxSlotsReached: '⚠ "%1": maximum active slots reached.',
       logQueueSummary: '✓ %1/%2 evolution(s) applied successfully.',
-      logNeedSelectPlayer: '⚠ Fill in the player form and press "Confirm player" before starting the queue.',
+      logNeedSelectPlayer: '⚠ Select a player from the dropdown before starting the queue.',
       logNeedAtLeastOnePS: 'Select at least one PlayStyle.',
       logMaxPlus: 'Maximum %1 PlayStyles+.',
       logMaxWhite: 'Maximum %1 white PlayStyles.',
@@ -223,10 +241,6 @@
       logPresetLoaded: 'Preset "%1" loaded: %2 PS+ / %3 PS.',
       logPresetDeleted: 'Preset "%1" deleted.',
       logPlayerSelectedManual: 'Player selected: %1 (%2 %3) [manual mode]',
-      logManualNeedName: "⚠ Type the player's name.",
-      logManualNeedRating: "⚠ Type the player's OVR.",
-      logManualNeedPosition: "⚠ Type the player's position.",
-      logManualBadRating: '⚠ Invalid OVR. It must be a number between 40 and 99.',
       logLangChanged: 'Language switched to English.',
       logEmergencyStop: '[PS Lab Assist] Emergency stop activated.',
 
@@ -441,127 +455,227 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  async function waitFor(fn, { timeout = 15000, interval = 150 } = {}) {
-    const start = Date.now();
-    while (Date.now() - start < timeout) {
-      let val;
-      try { val = fn(); } catch (e) { val = null; }
-      if (val) return val;
-      await sleep(interval);
-    }
-    return null;
+
+  // ─── MOTOR: API INTERNA DE EA ─────────────────────────────────────────────
+  // En vez de navegar el DOM como un humano, usamos los servicios internos
+  // que la propia Web App de EA expone en window.services y window.repositories.
+  // Esto hace el script mucho más rápido, robusto, y compatible con Paletools.
+
+  const ACAD     = () => (window.services && window.services.Academy) || null;
+  const CLUB_SVC = () => (window.services && window.services.Club)    || null;
+
+  // Envuelve el patrón Observable de EA en una Promise estándar
+  function svcObserve(observable) {
+    return new Promise((resolve, reject) => {
+      if (!observable || typeof observable.observe !== 'function') return reject(new Error('not an observable'));
+      let done = false;
+      observable.observe(window, function (obs, res) {
+        if (done) return; done = true;
+        try { obs.unobserve(window); } catch (_) {}
+        if (res && res.success) resolve(res); else reject(res || new Error('call failed'));
+      });
+    });
   }
 
-  function normalizeName(s) {
-    return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  }
+  const applyEvo = (slotId, itemId) => svcObserve(ACAD().addItemToSlot(slotId, itemId, undefined));
+  const claimEvo = (slotId)         => svcObserve(ACAD().claimSlot(slotId));
 
-  function isVisible(el) {
-    if (!el) return false;
-    const rect = el.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0 || el.offsetParent === null) return false;
-    // Descartar elementos en plena animación de cierre (opacity casi 0):
-    // EA suele animar el fade-out de sus modales, y durante esa transición
-    // el elemento sigue teniendo dimensiones físicas aunque visualmente ya
-    // esté invisible. Sin este chequeo, un modal "Get Evolution" anterior
-    // podría confundirse con el del siguiente PlayStyle en la cola.
-    const style = window.getComputedStyle(el);
-    if (parseFloat(style.opacity) < 0.5) return false;
-    return true;
-  }
+  // slotId fijo por PS — estos IDs son los que la API interna de EA usa
+  // para identificar cada evolución de PlayStyle. No cambian entre sesiones.
+  const PS_SLOT = {
+    'Finesse Shot': 2141, 'Far Throw': 2142, 'Enforcer': 2143, 'Intercept': 2144,
+    'Whipped Pass': 2145, 'Long Ball Pass': 2146, 'Incisive Pass': 2147, 'Deflector': 2148,
+    'Quick Step': 2149, 'Trickster': 2150, 'Slide Tackle': 2151, 'Aerial Fortress': 2152,
+    'Tiki Taka': 2153, 'Gamechanger': 2154, 'Chip Shot': 2155, 'Cross Claimer': 2156,
+    'Bruiser': 2157, 'Precision Header': 2158, 'Acrobatic': 2159, 'Long Throw': 2160,
+    'Press Proven': 2161, 'Block': 2162, 'Pinged Pass': 2163, 'Inventive': 2164,
+    'Power Shot': 2165, '1v1 Close Down': 2166, 'Relentless': 2167, 'Rapid': 2168,
+    'Jockey': 2169, 'Anticipate': 2170, 'Low Driven Shot': 2171, 'Dead Ball': 2172,
+    'Far Reach': 2173, 'Footwork': 2174, 'Technical': 2175, 'First Touch': 2176,
+    'Far Reach+': 2181, 'Enforcer+': 2182, 'Relentless+': 2183, 'Technical+': 2184,
+    'Intercept+': 2185, 'Tiki Taka+': 2186, 'Low Driven Shot+': 2187, 'Footwork+': 2188,
+    'Bruiser+': 2189, 'Chip Shot+': 2190, 'Jockey+': 2191, 'Long Ball Pass+': 2192,
+    'Acrobatic+': 2193, 'Dead Ball+': 2194, 'Slide Tackle+': 2195, 'Anticipate+': 2196,
+    'Inventive+': 2197, 'Cross Claimer+': 2198, 'Long Throw+': 2199, 'First Touch+': 2201,
+    'Aerial Fortress+': 2202, 'Incisive Pass+': 2203, '1v1 Close Down+': 2204,
+    'Far Throw+': 2205, 'Trickster+': 2206, 'Press Proven+': 2207, 'Whipped Pass+': 2208,
+    'Precision Header+': 2209, 'Quick Step+': 2210, 'Rapid+': 2211, 'Block+': 2212,
+    'Pinged Pass+': 2213, 'Gamechanger+': 2214, 'Deflector+': 2215, 'Power Shot+': 2216,
+  };
 
-  function findButtonByExactText(text, root) {
-    root = root || document;
-    for (const b of root.querySelectorAll('button')) {
-      if (b.textContent.trim() === text && isVisible(b)) return b;
-    }
-    return null;
-  }
+  // ─── CARGA DE CLUB VÍA API ────────────────────────────────────────────────
+  let clubItems    = [];
+  let selectedPlayer = null;
 
-  function simulateRealClick(el) {
-    const rect = el.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const opts = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, button: 0 };
-    el.dispatchEvent(new PointerEvent('pointerdown', opts));
-    el.dispatchEvent(new MouseEvent('mousedown', opts));
-    el.dispatchEvent(new PointerEvent('pointerup', opts));
-    el.dispatchEvent(new MouseEvent('mouseup', opts));
-    el.dispatchEvent(new MouseEvent('click', opts));
+  function getPlayerName(it) {
+    try { const sd = it.getStaticData ? it.getStaticData() : it._staticData; if (sd && sd.name) return sd.name; } catch (_) {}
+    try { return it.name || it._name || ''; } catch (_) { return ''; }
   }
-
-  function isGetEvolutionModalVisible() {
-    const titleEl = Array.from(document.querySelectorAll('div,h1,h2,h3,p'))
-      .find(el => el.children.length === 0 && el.textContent.trim() === 'Get Evolution' && isVisible(el));
-    return titleEl ? titleEl.closest('div') : null;
+  function getPlayerRating(it) {
+    try { return String(it.rating || it._rating || it.ovr || ''); } catch (_) { return ''; }
   }
-
-  function isBenignWarningModalVisible() {
-    const titleEl = Array.from(document.querySelectorAll('div,h1,h2,h3,p'))
-      .find(el => el.children.length === 0 && el.textContent.trim() === 'Warning' && isVisible(el));
-    if (!titleEl) return null;
-    const modal = titleEl.closest('div');
-    if (!modal) return null;
-    const hasCancel = Array.from(modal.querySelectorAll('button')).some(b => b.textContent.trim() === 'Cancel');
-    if (hasCancel) return null;
-    return modal;
-  }
-
-  function findCandidateList() {
-    const anyCard = document.querySelector('li.listFUTItem');
-    if (!anyCard) return null;
-    return anyCard.closest('ul,ol');
-  }
-
-  function gridSignature() {
-    const list = findCandidateList();
-    if (!list) return null;
-    return Array.from(list.querySelectorAll('.rating')).map(e => e.textContent.trim()).join(',');
-  }
-
-  // Firma de cambio para la lista de tiles de evolución (no la de
-  // jugadores elegibles) — se usa para detectar si un clic en "Next"
-  // efectivamente cambió de página en la pantalla de selección de tile.
-  function evoTilesSignature() {
-    return Array.from(document.querySelectorAll('h1.ut-academy-slot-tile-view--title'))
-      .map(h => h.textContent.trim()).join(',');
-  }
-
-  function beep() {
+  function getPlayerPosition(it) {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine'; osc.frequency.value = 880; gain.gain.value = 0.05;
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      setTimeout(() => { osc.stop(); ctx.close(); }, 180);
-    } catch (e) {}
+      const pos = it.preferredPosition != null ? it.preferredPosition : (it.position || it._position);
+      if (pos != null && window.UTLocalizationUtil && UTLocalizationUtil.getPositionName)
+        return UTLocalizationUtil.getPositionName(pos) || String(pos);
+      return pos != null ? String(pos) : '';
+    } catch (_) { return ''; }
+  }
+  function isPlayerItem(it) { try { return !!(it && it.isPlayer && it.isPlayer()); } catch (_) { return false; } }
+
+  function makeClubCriteria(offset, count) {
+    try {
+      const Ctor = window.UTSearchCriteriaDTO;
+      if (!Ctor) return null;
+      const c = new Ctor();
+      try { c.type = (window.SearchType && window.SearchType.PLAYER) || 'player'; } catch (_) {}
+      try { c.count = count; } catch (_) {}
+      try { c.offset = offset; } catch (_) {}
+      return c;
+    } catch (_) { return null; }
   }
 
-  function highlightModal(modal) {
-    modal.style.outline = '3px solid #2ee6a8';
-    modal.style.boxShadow = '0 0 25px 4px rgba(46,230,168,0.7)';
+  function squadReady() {
+    try {
+      const R = window.repositories, S = window.services;
+      const fns = [
+        () => R && R.Squad && R.Squad.getActiveSquad  && R.Squad.getActiveSquad(),
+        () => R && R.Squad && R.Squad.getCurrentSquad && R.Squad.getCurrentSquad(),
+        () => S && S.Squad && S.Squad.getActiveSquad  && S.Squad.getActiveSquad(),
+      ];
+      for (const f of fns) { try { if (f()) return true; } catch (_) {} }
+    } catch (_) {}
+    return false;
   }
 
-  let queueOkClicked = false;
-  let queueCancelClicked = false;
+  let clubLoading = false;
+  async function loadClub(manual) {
+    if (clubLoading && !manual) return;
+    if (!CLUB_SVC()) { queueLog(t('logClubServiceUnavailable')); return; }
+    clubLoading = true;
 
-  document.addEventListener('click', (ev) => {
-    const target = ev.target;
-    if (!(target instanceof HTMLElement) || target.tagName !== 'BUTTON') return;
-    const text = target.textContent.trim();
-    const modalNow = isGetEvolutionModalVisible();
-    if (!modalNow) return;
-    if (text === 'Ok') { appliedCount++; updateCounterUI(); queueOkClicked = true; }
-    else if (text === 'Cancel') { queueCancelClicked = true; }
-  }, true);
+    const sp      = document.getElementById('pslab-scan-progress');
+    const scanBtn = document.getElementById('pslab-scan-btn');
+    if (sp)      { sp.textContent = t('scanProgressWaiting'); sp.classList.add('visible'); }
+    if (scanBtn) scanBtn.disabled = true;
 
-  let queueActive = false;
-  let queueStoppedReason = null; // 'user' | 'timeout' | null
-  let pendingProgress = null;    // { items: [...], targetPlayer, doneCount, total } | null
-  const ITEM_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos máximo por evolución
-  const TABS_TO_TRY = ['PlayStyles Lab', 'PlayStyles+ Lab'];
+    // Esperar a que el squad esté disponible (señal de que la app cargó)
+    let waited = 0;
+    while (!squadReady() && waited < 12000) { await sleep(300); waited += 300; }
+
+    const all = [], seen = new Set();
+    let offset = 0, guard = 0, failed = false;
+
+    while (guard++ < 100) {
+      const crit = makeClubCriteria(offset, 91);
+      if (!crit) { failed = true; break; }
+      let res;
+      try { res = await svcObserve(CLUB_SVC().search(crit)); }
+      catch (e) { if (offset === 0) { failed = true; break; } else break; }
+      const items = (res && res.response && res.response.items)
+                 || (res && res.data    && res.data.items)
+                 || [];
+      if (!items.length) break;
+      let added = 0;
+      for (const it of items) {
+        const id = it && it.id;
+        if (id != null && !seen.has(id) && isPlayerItem(it)) { seen.add(id); all.push(it); added++; }
+      }
+      offset += items.length;
+      if (sp) sp.textContent = t('scanProgressScanning', all.length, guard);
+      if (added === 0) break;
+      await sleep(120);
+    }
+
+    clubLoading = false;
+    if (scanBtn) { scanBtn.disabled = false; scanBtn.textContent = t('scanBtnRescan'); }
+
+    if (failed || all.length === 0) {
+      if (sp) sp.textContent = t('scanProgressNoneFound');
+      queueLog(t('logClubLoadFailed'));
+      return;
+    }
+
+    all.sort((a, b) => parseInt(getPlayerRating(b) || 0) - parseInt(getPlayerRating(a) || 0));
+    clubItems = all;
+    if (sp) sp.textContent = t('scanProgressDone', all.length);
+    document.getElementById('pslab-player-search-wrap').classList.add('visible');
+    renderDropdown('');
+    queueLog(t('logScanComplete', all.length));
+  }
+
+  function renderDropdown(query) {
+    const dropdown = document.getElementById('pslab-player-dropdown');
+    if (!dropdown) return;
+    const q = (query || '').toLowerCase().trim();
+    const filtered = q
+      ? clubItems.filter(it => {
+          const name   = getPlayerName(it).toLowerCase();
+          const rating = getPlayerRating(it);
+          const pos    = getPlayerPosition(it).toLowerCase();
+          return name.includes(q) || rating.includes(q) || pos.includes(q);
+        })
+      : clubItems;
+
+    if (filtered.length === 0) {
+      dropdown.innerHTML = '<div class="pslab-dropdown-empty">Sin resultados</div>';
+      dropdown.classList.add('visible');
+      return;
+    }
+    dropdown.innerHTML = filtered.slice(0, 60).map(it => {
+      const name   = getPlayerName(it);
+      const rating = getPlayerRating(it);
+      const pos    = getPlayerPosition(it);
+      return `<div class="pslab-dropdown-item" data-id="${it.id}">
+        <div class="pslab-dropdown-rating">${rating}</div>
+        <div class="pslab-dropdown-name">${name}</div>
+        <div class="pslab-dropdown-meta">${pos}</div>
+      </div>`;
+    }).join('');
+    dropdown.querySelectorAll('.pslab-dropdown-item').forEach(item => {
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const id = Number(item.dataset.id);
+        const player = clubItems.find(it => it.id === id);
+        if (player) selectPlayer(player);
+      });
+    });
+    dropdown.classList.add('visible');
+  }
+
+  function selectPlayer(player) {
+    selectedPlayer = player;
+    clearCardResults();
+    updateSelectedPlayerUI();
+    const name   = getPlayerName(player);
+    const rating = getPlayerRating(player);
+    const pos    = getPlayerPosition(player);
+    queueLog(t('logPlayerSelectedManual', name, rating, pos));
+    const dd = document.getElementById('pslab-player-dropdown');
+    if (dd) dd.classList.remove('visible');
+    const ps = document.getElementById('pslab-player-search');
+    if (ps) ps.value = '';
+  }
+
+  function updateSelectedPlayerUI() {
+    const card = document.getElementById('pslab-selected-player');
+    if (!card) return;
+    if (!selectedPlayer) { card.classList.remove('visible'); return; }
+    const name   = getPlayerName(selectedPlayer);
+    const rating = getPlayerRating(selectedPlayer);
+    const pos    = getPlayerPosition(selectedPlayer);
+    document.getElementById('pslab-selected-player-rating').textContent = rating;
+    document.getElementById('pslab-selected-player-name').textContent   = name;
+    document.getElementById('pslab-selected-player-meta').textContent   = pos;
+    card.classList.add('visible');
+  }
+
+  // ─── MOTOR DE COLA ────────────────────────────────────────────────────────
+  let queueActive       = false;
+  let queueStoppedReason = null;
+  let pendingProgress    = null;
+  const ITEM_TIMEOUT_MS  = 3 * 60 * 1000;
 
   function queueLog(msg) {
     const el = document.getElementById('pslab-queueLog');
@@ -569,651 +683,56 @@
     if (el) el.textContent = `[${time}] ${msg}\n` + el.textContent;
     console.log('[PS Lab Assist - Cola]', msg);
   }
-
   function setQueueStatus(text) {
     const el = document.getElementById('pslab-queueStatus');
     if (el) el.textContent = text;
   }
-
   function setQueueButtonsRunning(running) {
-    const startBtn = document.getElementById('pslab-queueStart');
-    const stopBtn = document.getElementById('pslab-queueStop');
-    const resumeBtn = document.getElementById('pslab-resumeBtn');
-    const retryBtn = document.getElementById('pslab-retryFailedBtn');
-    if (startBtn) startBtn.disabled = running;
-    if (stopBtn) stopBtn.disabled = !running;
-    if (resumeBtn) resumeBtn.disabled = running;
-    if (retryBtn) retryBtn.disabled = running;
+    ['pslab-queueStart','pslab-queueStop','pslab-resumeBtn','pslab-retryFailedBtn'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = i === 1 ? !running : running;
+    });
   }
 
-  // Cache de posición: { targetNorm -> { pageIndex, cardIndex } }
-  // Se guarda la primera vez que se encuentra un jugador y se reutiliza
-  // en las evoluciones siguientes para ir directo a esa página/posición.
-  const playerPositionCache = {};
-
-  // Navega hasta la página indicada desde la página 0 (ya cargada).
-  // Cada paso reintenta hasta 3 veces si el grid no cambia de firma a la
-  // primera, para tolerar lag de render de la Web App de EA.
-  async function navigateToPage(targetPage) {
-    for (let p = 0; p < targetPage; p++) {
-      if (!queueActive) return false;
-      let advanced = false;
-      for (let attempt = 0; attempt < 3 && !advanced; attempt++) {
-        const nextBtn = findButtonByExactText('Next');
-        if (!nextBtn) return false;
-        const sigBefore = gridSignature();
-        simulateRealClick(nextBtn);
-        // Esperamos un poco más en cada reintento por si la app está lenta
-        await sleep(480 + attempt * 250);
-        if (gridSignature() !== sigBefore) {
-          advanced = true;
-        } else {
-          // Doble-chequeo con una espera corta extra antes de reintentar,
-          // por si el cambio de firma llega justo después del sleep
-          await sleep(200);
-          if (gridSignature() !== sigBefore) advanced = true;
-        }
-      }
-      if (!advanced) return false;
-    }
-    return true;
-  }
-
-  // Intenta hacer clic en la tarjeta cardIndex de la página actual y
-  // confirmar que el jugador mostrado coincide con el objetivo.
-  // Devuelve true si el match es sólido, false si no.
-
-  // Pre-check por defId directo en el DOM — sin hacer clic (solo modo Paletools)
-  function cardMatchesPlayer(li, targetDefId) {
-    if (!targetDefId) return false;
-    const defEl = li.querySelector('[data-definition-id]');
-    return defEl && defEl.dataset.definitionId === targetDefId;
-  }
-
-  // Verifica la vista previa de una tarjeta ya seleccionada contra nombre + rating + posición.
-  // Espera a que el panel lateral de EA actualice su contenido.
-  async function verifyPreviewPanel(targetNorm, targetRating, targetPosition, prevNameRaw) {
-    // Esperamos a que el nombre del panel lateral cambie respecto al
-    // anterior. Le damos más margen (2.6s en vez de 1.8s) porque en
-    // momentos de carga pesada la app de EA puede tardar más en
-    // refrescar el panel, y un timeout corto nos haría comparar contra
-    // el nombre viejo, arriesgando un falso negativo (pasar de largo al
-    // jugador correcto).
-    await waitFor(() => {
-      const el = document.querySelector('div.name.main-view');
-      const txt = el ? el.textContent.trim() : '';
-      return txt && txt !== prevNameRaw;
-    }, { timeout: 2600, interval: 80 });
-
-    // Lectura del nombre con un pequeño reintento: si justo capturamos el
-    // DOM a mitad de un re-render (texto vacío o cortado), reintentamos
-    // unas pocas veces antes de dar por fallida la verificación.
-    let name = '';
-    for (let i = 0; i < 4; i++) {
-      const nameEl = document.querySelector('div.name.main-view');
-      name = nameEl ? normalizeName(nameEl.textContent) : '';
-      if (name) break;
-      await sleep(120);
-    }
-    if (!name || !name.includes(targetNorm)) return false;
-
-    // Si hay rating y/o posición para validar, buscarlos en el panel lateral
-    if (targetRating || targetPosition) {
-      // El panel lateral de EA muestra el rating en un elemento con clase "rating"
-      // y la posición en uno con clase "position"
-      const ratingEl   = document.querySelector('.ut-player-item-stats-view .rating, .playerStats .rating, .ut-card-item-view .rating');
-      const positionEl = document.querySelector('.ut-player-item-stats-view .position, .playerStats .position, .ut-card-item-view .position');
-
-      if (targetRating && ratingEl) {
-        const shownRating = ratingEl.textContent.trim();
-        if (shownRating && shownRating !== String(targetRating)) return false;
-      }
-      if (targetPosition && positionEl) {
-        const shownPos = normalizeName(positionEl.textContent.trim());
-        if (shownPos && !shownPos.includes(normalizeName(targetPosition))) return false;
-      }
-    }
-
-    // Doble verificación de estabilidad: confirmamos el nombre dos veces
-    // con una pausa entre medio, para asegurarnos de que el panel ya se
-    // asentó del todo y no estamos leyendo un estado transitorio.
-    await sleep(220);
-    if (!queueActive) return false;
-    const settled1 = document.querySelector('div.name.main-view');
-    const settledName1 = settled1 ? normalizeName(settled1.textContent) : '';
-    if (!settledName1.includes(targetNorm)) return false;
-
-    await sleep(180);
-    if (!queueActive) return false;
-    const settled2 = document.querySelector('div.name.main-view');
-    const settledName2 = settled2 ? normalizeName(settled2.textContent) : '';
-    return settledName2.includes(targetNorm);
-  }
-
-  async function tryClickCard(cards, cardIndex, targetNorm, targetDefId, targetRating, targetPosition) {
-    const card = cards[cardIndex];
-    if (!card) return false;
-
-    // Atajo por defId: si la tarjeta ya coincide, hacemos clic directo
-    // sabiendo que es el jugador correcto sin necesitar verificar el panel
-    const quickMatch = targetDefId ? cardMatchesPlayer(card, targetDefId) : false;
-
-    const prevNameEl  = document.querySelector('div.name.main-view');
-    const prevNameRaw = prevNameEl ? prevNameEl.textContent.trim() : '__NINGUNO__';
-    // Varios selectores de respaldo por si EA cambió la estructura del botón
-    // de "agregar" dentro de la tarjeta. Si ninguno calza, hacemos clic
-    // directo sobre la tarjeta (li) como último recurso — mejor que no
-    // hacer nada en absoluto.
-    const btn = card.querySelector('button.ut-image-button-control.btnAction.add')
-      || card.querySelector('button.btnAction.add')
-      || card.querySelector('button[class*="add"]')
-      || card.querySelector('button')
-      || card;
-    simulateRealClick(btn);
-    // Margen tras el clic antes de empezar a verificar: un poco más
-    // generoso que antes para tolerar momentos en que EA tarda más en
-    // arrancar la animación/render del panel de vista previa.
-    await sleep(quickMatch ? 160 : 260);
-
-    const warnModal = isBenignWarningModalVisible();
-    if (warnModal) {
-      const okBtn = findButtonByExactText('Ok', warnModal) || findButtonByExactText('Ok');
-      if (okBtn) simulateRealClick(okBtn);
-      await sleep(280);
-      return false;
-    }
-
-    if (quickMatch) {
-      await sleep(120);
-      return true;
-    }
-
-    // Sin defId (modo manual) o defId no encontrado en el DOM:
-    // verificamos nombre + rating + posición en el panel lateral de EA
-    return verifyPreviewPanel(targetNorm, targetRating, targetPosition, prevNameRaw);
-  }
-
-  async function scanForPlayer(targetPlayer) {
-    const targetNorm     = normalizeName(targetPlayer.name);
-    const targetDefId    = targetPlayer.defId || null;
-    const targetRating   = targetPlayer.rating   || null;
-    const targetPosition = targetPlayer.position || null;
-
-    // La clave de caché: preferimos defId cuando existe; en modo manual usamos
-    // una clave compuesta nombre+rating+posición (sin espacios, normalizada)
-    const cacheKey = targetDefId
-      ? targetDefId
-      : `manual:${targetNorm}:${targetRating}:${normalizeName(targetPosition || '')}`;
-
-    const cached = playerPositionCache[cacheKey];
-
-    // ── Modo rápido: ya sabemos dónde está ──────────────────────────────────
-    if (cached) {
-      queueLog(t('logCachePos', targetNorm, cached.pageIndex, cached.cardIndex));
-      overlaySetStep(t('overlayStepGoingDirect', cached.pageIndex + 1));
-
-      const reached = await navigateToPage(cached.pageIndex);
-      if (!queueActive) return false;
-
-      if (!reached) {
-        queueLog(t('logCacheNavFail', cached.pageIndex));
-        delete playerPositionCache[cacheKey];
-      } else {
-        await sleep(300);
-        const list = findCandidateList();
-        if (!list) return false;
-        const cards = Array.from(list.querySelectorAll('li.listFUTItem'));
-
-        // Intentar primero en la posición exacta guardada
-        if (await tryClickCard(cards, cached.cardIndex, targetNorm, targetDefId, targetRating, targetPosition)) return true;
-
-        // Si no coincide, buscar en las tarjetas adyacentes (±5) antes de
-        // caer al escaneo completo
-        for (let delta = 1; delta <= 5; delta++) {
-          for (const idx of [cached.cardIndex - delta, cached.cardIndex + delta]) {
-            if (idx < 0 || idx >= cards.length) continue;
-            if (await tryClickCard(cards, idx, targetNorm, targetDefId, targetRating, targetPosition)) {
-              playerPositionCache[cacheKey] = { pageIndex: cached.pageIndex, cardIndex: idx };
-              return true;
-            }
-            await sleep(220);
-          }
-        }
-
-        // Caché inválida: limpiarla y hacer escaneo completo desde página 0
-        queueLog(t('logCacheMismatch', targetNorm));
-        delete playerPositionCache[cacheKey];
-      }
-
-      // Si llegamos aquí (sea por fallo de navegación o por caché inválida),
-      // necesitamos volver a página 0 antes del escaneo completo de abajo.
-      const backToStart = await navigateToPage(0);
-      if (!backToStart || !queueActive) return false;
-      await sleep(300);
-    }
-
-    // ── Escaneo completo (primera vez o tras fallo de caché) ────────────────
-    let pageIndex = 0;
-    const MAX_PAGES = 80;
-    const targetRatingNum = targetRating ? parseInt(targetRating, 10) : null;
-
-    // Bandera: una vez que el rango de ratings de una página incluye (o ya
-    // pasó por debajo de) el rating buscado, dejamos de saltar y escaneamos
-    // todo carta por carta como antes — así nunca nos arriesgamos a pasar
-    // de largo al jugador.
-    let smartSkipDone = (targetRatingNum === null);
-
-    while (pageIndex < MAX_PAGES) {
-      if (!queueActive) return false;
-      const list = findCandidateList();
-      if (!list) return false;
-      await waitForCardsLoaded();
-      const cards = Array.from(list.querySelectorAll('li.listFUTItem'));
-
-      // ── Salto inteligente por rating ───────────────────────────────────
-      // La lista de EA viene siempre ordenada de mayor a menor rating.
-      // Si el rating MÍNIMO visible en esta página todavía es mayor que el
-      // buscado, significa que TODAS las cartas de esta página son de
-      // rating más alto que el target → es seguro saltar de página sin
-      // revisarlas una por una.
-      if (!smartSkipDone) {
-        const range = readPageRatingRange(list);
-        if (range) {
-          if (range.min > targetRatingNum) {
-            // Seguimos por encima del rating buscado: avanzar una página
-            // y volver a evaluar (no saltamos "a ciegas" varias páginas de
-            // golpe porque no sabemos cuántas cartas por rating hay; mejor
-            // ser conservadores e ir página por página pero SIN revisar
-            // tarjeta por tarjeta, que es la parte lenta).
-            queueLog(t('logSkippingPage', pageIndex, range.min, range.max, targetRatingNum));
-            const nextBtn = findButtonByExactText('Next');
-            if (!nextBtn) return false;
-            const sigBefore = gridSignature();
-            simulateRealClick(nextBtn);
-            await sleep(420);
-            if (gridSignature() === sigBefore) return false;
-            pageIndex++;
-            continue;
-          } else {
-            // El rango de esta página ya incluye o bajó del rating buscado:
-            // a partir de aquí escaneamos normal, carta por carta.
-            smartSkipDone = true;
-            queueLog(t('logRangeIncludesTarget', pageIndex, range.min, range.max, targetRatingNum));
-          }
-        } else {
-          // No se pudieron leer ratings (raro) — por seguridad, escaneamos detallado
-          smartSkipDone = true;
-        }
-      }
-
-      // Modo Paletools: intentar encontrar la tarjeta por defId directamente en el DOM
-      if (targetDefId) {
-        const directIdx = cards.findIndex(c => cardMatchesPlayer(c, targetDefId));
-        if (directIdx !== -1) {
-          const matched = await tryClickCard(cards, directIdx, targetNorm, targetDefId, targetRating, targetPosition);
-          if (matched) {
-            playerPositionCache[cacheKey] = { pageIndex, cardIndex: directIdx };
-            queueLog(t('logFoundById', pageIndex, directIdx));
-            return true;
-          }
-        }
-      }
-
-      // Escaneo tarjeta por tarjeta (también cubre modo manual)
-      if (cards.length > 0) {
-        overlaySetStep(t('overlayStepScanningCards', pageIndex, cards.length));
-      }
-      for (let ci = 0; ci < cards.length; ci++) {
-        if (!queueActive) return false;
-        // Log de progreso cada 5 tarjetas (o en la primera), para distinguir
-        // "está trabajando despacio" de "está realmente trabado" — antes no
-        // había ninguna señal visible durante este bucle.
-        if (ci === 0 || ci % 5 === 0) {
-          queueLog(t('logScanningCard', ci + 1, cards.length, pageIndex));
-        }
-        try {
-          const matched = await tryClickCard(cards, ci, targetNorm, targetDefId, targetRating, targetPosition);
-          if (matched) {
-            playerPositionCache[cacheKey] = { pageIndex, cardIndex: ci };
-            queueLog(t('logFoundAndCached', pageIndex, ci));
-            return true;
-          }
-        } catch (e) {
-          console.warn('[PS Lab Assist] error leyendo candidato, sigo', e);
-        }
-        await sleep(220);
-      }
-
-      const nextBtn = findButtonByExactText('Next');
-      if (!nextBtn) return false;
-      const sigBefore = gridSignature();
-      simulateRealClick(nextBtn);
-      await sleep(500);
-      if (gridSignature() === sigBefore) return false;
-      pageIndex++;
-    }
-    return false;
-  }
-
-  async function findEvolutionTileByTitle(title) {
-    const list = document.querySelector('.ut-academy-hub-view--list');
-    if (!list) return null;
-    // Normaliza espacios para comparar: el HTML de EA a veces usa espacios
-    // no-rompibles (\u00A0) u otras variantes de espacio en blanco dentro
-    // de algunos títulos (ej. "Quick Step", "Press Proven") para evitar que
-    // se corten en dos líneas. Visualmente son idénticos a un espacio
-    // normal, pero en JS "Quick Step" !== "Quick\u00A0Step" con ===.
-    function normalizeSpaces(s) {
-      return (s || '').replace(/[\s\u00A0\u2000-\u200B\u202F\u205F\u3000]+/g, ' ').trim();
-    }
-    const titleNorm = normalizeSpaces(title);
-    function lookForTitle() {
-      return Array.from(document.querySelectorAll('h1.ut-academy-slot-tile-view--title'))
-        .find(h => normalizeSpaces(h.textContent) === titleNorm && isVisible(h));
-    }
-
-    // Primero intentamos scroll dentro de la lista (esto cubre el caso con
-    // Paletools, donde suele haber muchos más tiles visibles de una vez,
-    // o cualquier variante donde la lista sí scrollee internamente).
-    list.scrollTop = 0;
-    list.dispatchEvent(new Event('scroll', { bubbles: true }));
-    await sleep(250);
-    let found = lookForTitle();
-    if (found) return found;
-    let lastTop = -1, steps = 0;
-    while (steps < 60) {
-      if (!queueActive) return null;
-      list.scrollTop += 220;
-      list.dispatchEvent(new Event('scroll', { bubbles: true }));
-      await sleep(220);
-      found = lookForTitle();
-      if (found) return found;
-      if (list.scrollTop === lastTop) break;
-      lastTop = list.scrollTop;
-      steps++;
-    }
-
-    // Antes de paginar hacia adelante, nos aseguramos de estar en la
-    // primera página: la SPA de EA puede "recordar" en qué página de tiles
-    // quedamos de una visita anterior a esta misma pestaña (ej. si en el
-    // PS anterior de la cola terminamos en la página 2 o 3), y como solo
-    // sabemos avanzar con "Next", si el tile buscado está en una página
-    // anterior a la actual nunca lo encontraríamos. Retrocedemos del todo
-    // con "Previous" para arrancar siempre desde un punto conocido.
-    let backSteps = 0;
-    while (backSteps < 10) {
-      if (!queueActive) return null;
-      const prevBtn = findButtonByExactText('Previous');
-      if (!prevBtn) break;
-      const sigBeforeBack = evoTilesSignature();
-      simulateRealClick(prevBtn);
-      await sleep(400);
-      if (evoTilesSignature() === sigBeforeBack) {
-        await sleep(300);
-        if (evoTilesSignature() === sigBeforeBack) break;
-      }
-      backSteps++;
-    }
-    found = lookForTitle();
-    if (found) return found;
-
-    // Si el scroll no encontró nada, probamos paginar con "Next": sin
-    // Paletools, los tiles de PlayStyles vienen repartidos en páginas
-    // discretas (ej. 3 páginas de 12 cada una) en vez de una lista larga
-    // scrolleable. El botón "Next" en este contexto es el mismo que se usa
-    // más adelante para paginar la lista de jugadores elegibles — acá
-    // estamos en la pantalla de selección de tile, así que es seguro
-    // asumir que cualquier "Next" visible en este punto pertenece a esta
-    // paginación de tiles.
-    let pageAttempts = 0;
-    while (pageAttempts < 10) {
-      if (!queueActive) return null;
-      const nextBtn = findButtonByExactText('Next');
-      if (!nextBtn) break;
-      const sigBefore = evoTilesSignature();
-      simulateRealClick(nextBtn);
-      await sleep(450);
-      if (evoTilesSignature() === sigBefore) {
-        // Dar un poco más de margen por si la página tardó en renderizar
-        await sleep(350);
-        if (evoTilesSignature() === sigBefore) break;
-      }
-      found = lookForTitle();
-      if (found) return found;
-      pageAttempts++;
-    }
-
-    return null;
-  }
-
-  async function openEvolutionByTitle(title, preferredTab) {
-    const evoNav = findButtonByExactText('Evolutions');
-    if (evoNav) simulateRealClick(evoNav);
-    await sleep(500);
-    const tabsOrder = preferredTab
-      ? [preferredTab, ...TABS_TO_TRY.filter(t => t !== preferredTab)]
-      : TABS_TO_TRY;
-    for (const tabName of tabsOrder) {
-      if (!queueActive) return false;
-      const tabBtn = await waitFor(() => findButtonByExactText(tabName), { timeout: 4000 });
-      if (!tabBtn) continue;
-      simulateRealClick(tabBtn);
-      await sleep(500);
-      const titleEl = await findEvolutionTileByTitle(title);
-      if (!titleEl) {
-        queueLog(t('logTileNotFound', title, tabName));
-        // Diagnóstico: mostrar qué tiles SÍ están visibles en este momento,
-        // para poder comparar a simple vista si hay alguna diferencia
-        // sutil con el título que buscamos (espacios raros, mayúsculas,
-        // símbolos). Solo se loguea si realmente no se encontró nada.
-        const visibleTitles = Array.from(document.querySelectorAll('h1.ut-academy-slot-tile-view--title'))
-          .filter(h => isVisible(h))
-          .map(h => `"${h.textContent.trim()}"`)
-          .slice(0, 15)
-          .join(', ');
-        if (visibleTitles) queueLog(t('logVisibleTilesDebug', visibleTitles));
-        continue;
-      }
-
-      titleEl.scrollIntoView({ block: 'center' });
-      await sleep(250);
-      const tile = titleEl.closest('.ut-academy-slot-tile-view') || titleEl;
-
-      // Reintentamos el clic en el tile hasta 3 veces si el botón
-      // "Search" no aparece a tiempo. El tile puede haberse encontrado y
-      // clickeado bien, pero la apertura del modal de detalle (donde
-      // vive "Search") a veces no responde al primer clic — por ejemplo
-      // si la animación de otro tile todavía no había terminado, o el
-      // clic llegó en un frame donde el tile aún no era interactivo.
-      let searchBtn = null;
-      for (let attempt = 0; attempt < 3 && !searchBtn; attempt++) {
-        if (!queueActive) return false;
-        if (attempt > 0) {
-          // Volver a ubicar el tile por si el DOM se re-renderizó
-          const retryTitleEl = await findEvolutionTileByTitle(title);
-          const retryTile = retryTitleEl ? (retryTitleEl.closest('.ut-academy-slot-tile-view') || retryTitleEl) : tile;
-          if (retryTitleEl) retryTitleEl.scrollIntoView({ block: 'center' });
-          await sleep(200);
-          simulateRealClick(retryTile);
-        } else {
-          simulateRealClick(tile);
-        }
-        searchBtn = await waitFor(() => findButtonByExactText('Search'), { timeout: 6000 + attempt * 2000 });
-        if (!searchBtn && attempt < 2) {
-          queueLog(t('logTileClickRetry', title, attempt + 1));
-          await sleep(400);
-        }
-      }
-      if (searchBtn) { simulateRealClick(searchBtn); return true; }
-      return false;
-    }
-    return false;
-  }
-
+  // Aplica una evolución usando la API interna — sin navegar el DOM
   async function runQueueItem(item) {
-    const tp = item.targetPlayer;
-    queueLog(t('logOpening', item.title, tp.name));
-    const opened = await openEvolutionByTitle(item.title, item.tab);
     if (!queueActive) return;
-    if (!opened) {
-      item.status = 'error';
-      queueLog(t('logOpenFail', item.title));
-      return;
-    }
-    const gridReady = await waitFor(() => findCandidateList(), { timeout: 8000 });
-    if (!queueActive) return;
-    if (!gridReady) {
-      item.status = 'error';
-      queueLog(t('logGridFail', item.title));
-      return;
-    }
-    await sleep(400);
-    queueLog(t('logSearching', item.rawTargetName, item.title));
-    const found = await scanForPlayer(item.targetPlayer);
-    if (!queueActive) return;
-    if (!found) {
-      item.status = 'notfound';
-      queueLog(t('logNotEligible', item.targetPlayer.name, item.title));
-      return;
-    }
-    // Verificación de ID: solo en modo Paletools donde hay defId disponible
-    if (item.targetPlayer.defId) {
-      const selectedCard = document.querySelector('li.listFUTItem.selected [data-definition-id]');
-      const shownDefId   = selectedCard ? selectedCard.dataset.definitionId : null;
-      if (shownDefId && shownDefId !== item.targetPlayer.defId) {
-        item.status = 'error';
-        queueLog(t('logIdCheckFail', item.title, item.targetPlayer.defId, shownDefId));
-        return;
-      }
-    }
-    // Esperamos a que aparezca "Confirm Player" con reintentos: la primera
-    // evolución de la cola suele tardar más en este paso porque la app de
-    // EA todavía no tiene nada "calentado" en caché de render (recién
-    // cambió de tab, abrió el tile, cargó el grid). Un solo intento de 5s
-    // puede no alcanzar en ese momento puntual, aunque sí alcance en las
-    // evoluciones siguientes de la misma cola.
-    // También puede aparecer un modal de "Warning" del tipo "You already
-    // have an evolution version of this player" que bloquea a "Confirm
-    // Player" — lo detectamos y descartamos automáticamente con "Ok".
-    let confirmBtn = null;
-    for (let attempt = 0; attempt < 3 && !confirmBtn; attempt++) {
-      if (!queueActive) return;
-      confirmBtn = await waitFor(() => {
-        // Si hay un modal de Warning benigno (sin botón Cancel), lo cerramos
-        // automáticamente para despejar el camino a "Confirm Player".
-        const warn = isBenignWarningModalVisible();
-        if (warn) {
-          const okBtn = findButtonByExactText('Ok', warn) || findButtonByExactText('Ok');
-          if (okBtn) simulateRealClick(okBtn);
-        }
-        return findButtonByExactText('Confirm Player');
-      }, { timeout: 5000 + attempt * 2000 });
-      if (!confirmBtn && attempt < 2) {
-        queueLog(t('logConfirmBtnRetry', item.title, attempt + 1));
-        await sleep(500);
-      }
-    }
-    if (!queueActive) return;
-    if (!confirmBtn) {
-      item.status = 'error';
-      queueLog(t('logNoConfirmBtn', item.title));
-      return;
-    }
-    await sleep(250);
+    if (!selectedPlayer) { item.status = 'error'; queueLog(t('logNeedSelectPlayer')); return; }
+    const slotId = PS_SLOT[item.title];
+    if (!slotId) { item.status = 'error'; queueLog(t('logNoSlotId', item.title)); return; }
 
-    // Reintentamos el clic en "Confirm Player" hasta 3 veces si el modal de
-    // "Get Evolution" no aparece a tiempo — esto puede pasar si la app de EA
-    // se pone más lenta tras varias evoluciones consecutivas y el clic
-    // original se pierde o el modal tarda más de lo esperado en renderizar.
-    let modal = null;
-    for (let attempt = 0; attempt < 3 && !modal; attempt++) {
-      if (!queueActive) return;
-      // Antes de reintentar el clic, verificar si el modal ya apareció
-      // (puede que el clic anterior sí haya funcionado y solo haya sido
-      // lento en renderizar) — así evitamos un clic duplicado innecesario.
-      if (attempt > 0) {
-        modal = isGetEvolutionModalVisible();
-        if (modal) break;
-        const btn = findButtonByExactText('Confirm Player');
-        if (btn) simulateRealClick(btn);
-      } else {
-        simulateRealClick(confirmBtn);
-      }
-      modal = await waitFor(() => isGetEvolutionModalVisible(), { timeout: 8000 + attempt * 3000 });
-      if (!modal && attempt < 2) {
-        queueLog(t('logModalRetry', item.title, attempt + 1));
-        await sleep(500);
-      }
-    }
-    if (!queueActive) return;
-    if (!modal) {
-      item.status = 'error';
-      queueLog(t('logNoModalAfterRetries', item.title));
-      return;
-    }
-    const modalTextNorm = normalizeName(modal.textContent);
-    const tpNorm = normalizeName(item.targetPlayer.name);
-    if (!modalTextNorm.includes(tpNorm)) {
-      const cancelBtn = findButtonByExactText('Cancel', modal) || findButtonByExactText('Cancel');
-      if (cancelBtn) simulateRealClick(cancelBtn);
-      item.status = 'error';
-      queueLog(t('logModalMismatch', item.title, item.targetPlayer.name));
-      await sleep(500);
-      return;
-    }
-    highlightModal(modal);
-    beep();
-    item.status = 'awaiting-ok';
-    queueOkClicked = false;
-    queueCancelClicked = false;
-    if (state.autoConfirmFinal) {
-      queueLog(t('logAutoConfirming', item.title, item.rawTargetName));
-      setQueueStatus(t('statusAutoConfirming', item.title, item.targetPlayer.name));
-      await sleep(800);
-      if (!queueActive) return;
-      const okBtn = findButtonByExactText('Ok', modal) || findButtonByExactText('Ok');
-      if (okBtn) simulateRealClick(okBtn);
-    } else {
-      queueLog(t('logAwaitingManual', item.title));
-      if (!state.autoConfirmFinal) overlayShowConfirmHint(true);
-      setQueueStatus(t('statusAwaitingManual', item.title, item.targetPlayer.name));
-    }
-    // Esperamos a que: (a) el listener global detecte el clic en Ok/Cancel,
-    // o (b) el modal desaparezca por su cuenta (fallback de seguridad — por
-    // si el clic ocurrió en un instante donde el listener no lo capturó
-    // correctamente, ej. el modal cerrándose justo en ese frame).
-    await waitFor(
-      () => queueOkClicked || queueCancelClicked || !isGetEvolutionModalVisible() || !queueActive,
-      { timeout: 30 * 60 * 1000, interval: 200 }
-    );
-    if (!queueActive) return;
-    overlayShowConfirmHint(false);
+    const itemId = selectedPlayer.id;
+    queueLog(t('logApplyingPS', item.title, getPlayerName(selectedPlayer)));
 
-    // Verificación de estabilidad: el modal de EA puede quedar técnicamente
-    // "visible" (con dimensiones en el layout) durante su animación de
-    // cierre, aunque ya esté en opacity 0. Si pasamos al siguiente ítem
-    // demasiado rápido, ese modal viejo puede confundirse con el modal
-    // nuevo del siguiente PlayStyle (y fallar la validación de nombre por
-    // mostrar el del ítem anterior). Esperamos a que esté realmente
-    // ausente de forma consistente antes de continuar.
-    await waitFor(() => !isGetEvolutionModalVisible(), { timeout: 4000, interval: 150 });
-    await sleep(350);
-    if (isGetEvolutionModalVisible()) {
-      // Si después de esta espera todavía hay un modal "Get Evolution"
-      // visible (caso raro), damos un margen extra antes de seguir.
-      await sleep(600);
+    try {
+      const res = await applyEvo(slotId, itemId);
+      if (res && res.data && res.data.isMaximumNumberOfSlotsReached)
+        queueLog(t('logMaxSlotsReached', item.title));
+      try {
+        await sleep(300);
+        await claimEvo(slotId);
+      } catch (_) {
+        // Algunos PS no requieren claim — ignorar silenciosamente
+      }
+      item.status = 'done';
+      appliedCount++;
+      updateCounterUI();
+      queueLog(t('logApplied', item.title, getPlayerName(selectedPlayer)));
+    } catch (e) {
+      item.status = 'error';
+      const code = (e && e.error && e.error.code) || (e && e.status);
+      const EA_ERRORS = {
+        458: 'captcha requerido',
+        460: 'no elegible (ya lo tiene, límite alcanzado, o rareza/OVR no permite)',
+        461: 'permiso denegado',
+        426: 'función deshabilitada',
+        470: 'moneda insuficiente',
+      };
+      const detail = (code && EA_ERRORS[code])
+        ? `${code} — ${EA_ERRORS[code]}`
+        : (e && e.message) || String(e);
+      queueLog(t('logApplyFailed', item.title, detail));
     }
-    // Si el modal ya no está pero ninguno de los dos flags se marcó (el
-    // caso raro que estamos cubriendo), asumimos que se confirmó: el modal
-    // de "Get Evolution" en EA solo se cierra solo tras un Ok o Cancel real.
-    if (!queueOkClicked && !queueCancelClicked) {
-      queueLog(t('logModalClosedAssumed', item.title));
-      appliedCount++; updateCounterUI();
-      queueOkClicked = true;
-    }
-    item.status = queueOkClicked ? 'done' : 'skipped';
-    queueLog(queueOkClicked ? t('logApplied', item.title, item.rawTargetName) : t('logCancelled', item.title));
-    await sleep(700);
   }
 
   async function runQueue(items, isResume) {
@@ -1221,59 +740,37 @@
     queueStoppedReason = null;
     setQueueButtonsRunning(true);
     overlayShow(items);
-    if (!isResume) {
-      clearCardResults();
-    } else {
-      // Al reanudar, marcar visualmente lo que ya se aplicó en la corrida anterior
-      items.filter(i => i.status === 'done').forEach(i => markCardResult(i.title, 'done'));
-    }
+    if (!isResume) clearCardResults();
+    else items.filter(i => i.status === 'done').forEach(i => markCardResult(i.title, 'done'));
     let doneCount = items.filter(i => i.status === 'done').length;
-    let timedOutItemIndex = -1;
+    let timedOutIdx = -1;
 
     for (let i = 0; i < items.length; i++) {
       if (!queueActive) break;
-      if (items[i].status === 'done') continue; // ya aplicado en una corrida anterior (resume)
-
+      if (items[i].status === 'done') continue;
       setQueueStatus(t('statusProcessing', i + 1, items.length, items[i].title));
       overlaySetItemStatus(items[i].title, 'running');
       overlaySetStep(t('overlayStepProgress', i + 1, items.length, items[i].title));
-      overlayShowConfirmHint(false);
 
-      // Timeout de seguridad por evolución: si runQueueItem no resuelve en
-      // ITEM_TIMEOUT_MS, lo tratamos como un "stop" — se corta la cola y se
-      // guarda el progreso pendiente, igual que si el usuario hubiera
-      // presionado Detener. Esto evita que un cuelgue silencioso deje la
-      // cola corriendo indefinidamente sin que nadie se entere.
       let timedOut = false;
-      const timeoutId = setTimeout(() => {
-        timedOut = true;
-        queueActive = false;
-      }, ITEM_TIMEOUT_MS);
-
+      const tid = setTimeout(() => { timedOut = true; queueActive = false; }, ITEM_TIMEOUT_MS);
       await runQueueItem(items[i]);
-      clearTimeout(timeoutId);
+      clearTimeout(tid);
 
-      if (timedOut) {
-        items[i].status = 'error';
-        timedOutItemIndex = i;
-        markCardResult(items[i].title, 'error');
-        queueStoppedReason = 'timeout';
-        break;
-      }
-
+      if (timedOut) { items[i].status = 'error'; timedOutIdx = i; markCardResult(items[i].title, 'error'); queueStoppedReason = 'timeout'; break; }
       overlaySetItemStatus(items[i].title, items[i].status);
       markCardResult(items[i].title, items[i].status);
       if (items[i].status === 'done') doneCount++;
       overlaySetProgress(i + 1, items.length);
+      if (i < items.length - 1 && queueActive) await sleep(400);
     }
 
-    const stoppedEarly = queueActive === false && queueStoppedReason !== null;
+    const stoppedEarly = !queueActive && queueStoppedReason !== null;
     queueActive = false;
     setQueueButtonsRunning(false);
 
     if (queueStoppedReason === 'timeout') {
-      const stuckTitle = items[timedOutItemIndex] ? items[timedOutItemIndex].title : '?';
-      queueLog(t('logItemTimeout', stuckTitle, Math.round(ITEM_TIMEOUT_MS / 60000)));
+      queueLog(t('logItemTimeout', timedOutIdx >= 0 ? items[timedOutIdx].title : '?', Math.round(ITEM_TIMEOUT_MS / 60000)));
       setQueueStatus(t('statusStoppedTimeout'));
     } else if (queueStoppedReason === 'user') {
       queueLog(t('logQueueStoppedByUser'));
@@ -1282,115 +779,94 @@
 
     const pending = items.filter(i => i.status !== 'done');
     if (stoppedEarly && pending.length > 0) {
-      // Guardamos el progreso para poder retomarlo con "Continuar cola pendiente"
       pendingProgress = { items, doneCount, total: items.length };
       queueLog(t('logProgressSaved', pending.length));
       updateResumeButtonVisibility();
-      overlayShowConfirmHint(false);
       setTimeout(() => overlayHide(), 1500);
       return;
     }
 
-    // Cola terminó su recorrido completo (sin detenerse a mitad de camino)
     pendingProgress = null;
     updateResumeButtonVisibility();
     setQueueStatus(t('statusQueueFinished'));
     queueLog(t('logQueueFinished'));
     queueLog(t('logQueueSummary', doneCount, items.length));
     overlaySetStep(t('overlayStepDone', doneCount));
-    overlayShowConfirmHint(false);
-
-    // Ofrecer reintentar fallidos si quedó alguno
     const failed = items.filter(i => i.status !== 'done');
     lastFailedItems = failed.length > 0 ? failed : null;
     updateRetryButtonVisibility();
-
     setTimeout(() => overlayHide(), 3000);
   }
 
   function getCheckedValues(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return [];
-    return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    const c = document.getElementById(containerId);
+    return c ? Array.from(c.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value) : [];
   }
 
   let lastFailedItems = null;
-
   function updateRetryButtonVisibility() {
     const btn = document.getElementById('pslab-retryFailedBtn');
     if (!btn) return;
-    if (lastFailedItems && lastFailedItems.length > 0) {
-      btn.textContent = t('retryFailedBtn', lastFailedItems.length);
-      btn.style.display = 'block';
-    } else {
-      btn.style.display = 'none';
-    }
+    btn.style.display = (lastFailedItems && lastFailedItems.length > 0) ? 'block' : 'none';
+    if (lastFailedItems && lastFailedItems.length > 0) btn.textContent = t('retryFailedBtn', lastFailedItems.length);
   }
-
   function updateResumeButtonVisibility() {
     const btn = document.getElementById('pslab-resumeBtn');
     if (!btn) return;
-    if (pendingProgress && pendingProgress.items.some(i => i.status !== 'done')) {
-      const pendingCount = pendingProgress.items.filter(i => i.status !== 'done').length;
-      btn.textContent = t('resumeBtn', pendingCount);
-      btn.style.display = 'block';
-    } else {
-      btn.style.display = 'none';
-    }
+    const hasPending = pendingProgress && pendingProgress.items.some(i => i.status !== 'done');
+    btn.style.display = hasPending ? 'block' : 'none';
+    if (hasPending) btn.textContent = t('resumeBtn', pendingProgress.items.filter(i => i.status !== 'done').length);
   }
-
   function retryFailedFromUI() {
-    if (queueActive || !lastFailedItems || lastFailedItems.length === 0) return;
-    const itemsToRetry = lastFailedItems.map(i => ({ ...i, status: 'pending' }));
-    lastFailedItems = null;
-    updateRetryButtonVisibility();
-    Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
-    queueLog(t('logRetryingFailed', itemsToRetry.length));
-    runQueue(itemsToRetry, false);
+    if (queueActive || !lastFailedItems || !lastFailedItems.length) return;
+    const items = lastFailedItems.map(i => ({ ...i, status: 'pending' }));
+    lastFailedItems = null; updateRetryButtonVisibility();
+    queueLog(t('logRetryingFailed', items.length));
+    runQueue(items, false);
   }
-
   function resumeQueueFromUI() {
     if (queueActive || !pendingProgress) return;
     const items = pendingProgress.items;
-    pendingProgress = null;
-    updateResumeButtonVisibility();
+    pendingProgress = null; updateResumeButtonVisibility();
     queueLog(t('logResumingQueue', items.filter(i => i.status !== 'done').length));
     runQueue(items, true);
   }
-
   function startQueueFromUI() {
     if (queueActive) return;
     const plusChecked  = getCheckedValues('pslab-plusList');
     const whiteChecked = getCheckedValues('pslab-whiteList');
-
-    // Validar que se confirmó un jugador con el formulario manual
-    if (!selectedPlayer) {
-      queueLog(t('logNeedSelectPlayer'));
-      return;
-    }
-    if (plusChecked.length === 0 && whiteChecked.length === 0) { queueLog(t('logNeedAtLeastOnePS')); return; }
-    if (plusChecked.length > MAX_PLUS)   { queueLog(t('logMaxPlus', MAX_PLUS)); return; }
+    if (!selectedPlayer) { queueLog(t('logNeedSelectPlayer')); return; }
+    if (!plusChecked.length && !whiteChecked.length) { queueLog(t('logNeedAtLeastOnePS')); return; }
+    if (plusChecked.length  > MAX_PLUS)  { queueLog(t('logMaxPlus', MAX_PLUS));  return; }
     if (whiteChecked.length > MAX_WHITE) { queueLog(t('logMaxWhite', MAX_WHITE)); return; }
-
-    state.queuePlusSelected  = plusChecked;
-    state.queueWhiteSelected = whiteChecked;
-
-    const items = plusChecked.map(title => ({ title, targetPlayer: selectedPlayer, rawTargetName: selectedPlayer.name, tab: 'PlayStyles+ Lab', status: 'pending' }))
-      .concat(whiteChecked.map(title => ({ title, targetPlayer: selectedPlayer, rawTargetName: selectedPlayer.name, tab: 'PlayStyles Lab', status: 'pending' })));
-    // Limpiar caché de posición y progreso pendiente anterior al iniciar cola nueva
-    Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
-    pendingProgress = null;
-    lastFailedItems = null;
-    updateResumeButtonVisibility();
-    updateRetryButtonVisibility();
-    queueLog(t('logStartingQueue', selectedPlayer.name, items.length));
+    pendingProgress = null; lastFailedItems = null;
+    updateResumeButtonVisibility(); updateRetryButtonVisibility();
+    const name  = getPlayerName(selectedPlayer);
+    const items = plusChecked.map(title => ({ title, status: 'pending', tab: 'PS+' }))
+      .concat(whiteChecked.map(title => ({ title, status: 'pending', tab: 'PS' })));
+    queueLog(t('logStartingQueue', name, items.length));
     runQueue(items, false);
   }
-
   function stopQueueFromUI() {
     if (!queueActive) return;
     queueStoppedReason = 'user';
     queueActive = false;
+  }
+
+  // Arranque: esperar a que la API de EA esté disponible y cargar el club
+  function bootEngine() {
+    let tries = 0;
+    const iv = setInterval(() => {
+      tries++;
+      if (ACAD() && CLUB_SVC()) {
+        clearInterval(iv);
+        queueLog(t('logApiReady'));
+        loadClub(false);
+      } else if (tries > 160) {
+        clearInterval(iv);
+        queueLog(t('logApiNotReady'));
+      }
+    }, 500);
   }
 
   // ─── ESTILOS ──────────────────────────────────────────────────────────────
@@ -1859,19 +1335,6 @@
     }
 
     /* ── Aviso de conflicto con Paletools ── */
-    #psLabAssistPanel .pslab-paletools-warning {
-      font-size: 10px;
-      line-height: 1.4;
-      color: #fca5a5;
-      background: rgba(248,113,113,0.08);
-      border: 1px solid rgba(248,113,113,0.25);
-      border-radius: 8px;
-      padding: 7px 9px;
-      margin-bottom: 10px;
-    }
-    #psLabAssistPanel .pslab-paletools-warning strong { color: #f87171; font-weight: 700; }
-
-    /* ── Botones ── */
     #psLabAssistPanel .pslab-btns {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -2199,6 +1662,86 @@
       margin-bottom: 12px;
     }
 
+    /* ── Botón escanear y buscador ── */
+    #pslab-scan-btn {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed rgba(46,230,168,0.3);
+      color: #2ee6a8;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    #pslab-scan-btn:hover { background: rgba(46,230,168,0.07); border-color: rgba(46,230,168,0.5); }
+    #pslab-scan-btn:disabled { opacity: 0.4; cursor: default; }
+    #pslab-scan-progress {
+      font-size: 10px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 5px;
+      min-height: 14px;
+      display: none;
+    }
+    #pslab-scan-progress.visible { display: block; }
+    #pslab-player-search-wrap {
+      display: none;
+      position: relative;
+      margin-bottom: 4px;
+    }
+    #pslab-player-search-wrap.visible { display: block; }
+    #pslab-player-search {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      color: #f1f5f9;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      transition: border-color .2s;
+    }
+    #pslab-player-search::placeholder { color: #475569; }
+    #pslab-player-search:focus { outline: none; border-color: rgba(46,230,168,0.5); }
+    #pslab-player-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: #0f1219;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000001;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+    #pslab-player-dropdown.visible { display: block; }
+    .pslab-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background .1s;
+    }
+    .pslab-dropdown-item:last-child { border-bottom: none; }
+    .pslab-dropdown-item:hover { background: rgba(46,230,168,0.07); }
+    .pslab-dropdown-rating { font-size: 13px; font-weight: 700; color: #fff; min-width: 26px; text-align: center; }
+    .pslab-dropdown-name { flex: 1; font-size: 11px; font-weight: 600; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pslab-dropdown-meta { font-size: 9.5px; color: #475569; text-align: right; flex-shrink: 0; }
+    .pslab-dropdown-empty { padding: 10px; text-align: center; color: #475569; font-size: 11px; }
+    #pslab-player-dropdown option { background: #f1f5f9; color: #0f1219; }
+
     /* Jugador seleccionado — tarjeta resumen */
     #pslab-selected-player {
       display: none;
@@ -2262,58 +1805,6 @@
     }
 
     /* ── Formulario de jugador (modo manual) ── */
-    #pslab-manual-wrap {
-      margin-bottom: 8px;
-    }
-    .pslab-manual-fields {
-      display: grid;
-      grid-template-columns: 1fr 52px 64px;
-      gap: 5px;
-      margin-bottom: 6px;
-    }
-    .pslab-manual-fields input {
-      background: rgba(255,255,255,0.04);
-      color: #f1f5f9;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-      padding: 7px 8px;
-      font-size: 11px;
-      font-family: inherit;
-      transition: border-color .2s, background .2s;
-      width: 100%;
-      min-width: 0;
-    }
-    .pslab-manual-fields input::placeholder { color: #475569; }
-    .pslab-manual-fields input:focus {
-      outline: none;
-      border-color: rgba(46,230,168,0.5);
-      background: rgba(46,230,168,0.04);
-    }
-    .pslab-manual-note {
-      font-size: 9.5px;
-      line-height: 1.4;
-      color: #94a3b8;
-      background: rgba(251,191,36,0.06);
-      border: 1px solid rgba(251,191,36,0.2);
-      border-radius: 6px;
-      padding: 6px 8px;
-      margin-bottom: 6px;
-    }
-    .pslab-manual-note strong { color: #fbbf24; font-weight: 700; }
-    #pslab-manual-confirm-btn {
-      width: 100%;
-      padding: 7px 10px;
-      background: rgba(46,230,168,0.08);
-      border: 1px solid rgba(46,230,168,0.3);
-      border-radius: 8px;
-      color: #2ee6a8;
-      font-size: 11px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .15s, border-color .15s;
-    }
-    #pslab-manual-confirm-btn:hover { background: rgba(46,230,168,0.14); border-color: rgba(46,230,168,0.55); }
 
     /* ── Toggle externo ── */
     #psLabAssistToggleBtn {
@@ -2383,15 +1874,12 @@
 
     <div id="pslab-player-picker">
 
-      <!-- Modo manual: nombre + rating + posición -->
-      <div id="pslab-manual-wrap" class="visible">
-        <div class="pslab-manual-fields">
-          <input type="text"   id="pslab-manual-name"     placeholder="${t('manualNamePlaceholder')}" autocomplete="off">
-          <input type="number" id="pslab-manual-rating"   placeholder="OVR" min="40" max="99" autocomplete="off">
-          <input type="text"   id="pslab-manual-position" placeholder="${t('manualPositionPlaceholder')}" autocomplete="off">
-        </div>
-        <div class="pslab-manual-note">${t('manualNote')}</div>
-        <button id="pslab-manual-confirm-btn">${t('manualConfirmBtn')}</button>
+      <!-- Buscador de jugador vía API del club -->
+      <button id="pslab-scan-btn">${t('scanBtn')}</button>
+      <div id="pslab-scan-progress"></div>
+      <div id="pslab-player-search-wrap">
+        <input type="text" id="pslab-player-search" placeholder="${t('searchPlaceholder')}" autocomplete="off">
+        <div id="pslab-player-dropdown"></div>
       </div>
 
       <!-- Tarjeta resumen del jugador seleccionado -->
@@ -2441,9 +1929,6 @@
 
     <div class="pslab-divider"></div>
 
-    <div class="pslab-paletools-warning">
-      ${t('paletoolsWarning')}
-    </div>
 
     <div class="pslab-autoconfirm">
       <label class="pslab-autoconfirm-toggle">
@@ -2727,9 +2212,6 @@
   document.getElementById('pslab-langBtn').addEventListener('click', () => {
     const newLang = currentLang === 'es' ? 'en' : 'es';
     saveLang(newLang);
-    // Recargamos la página para reconstruir el panel completo en el nuevo
-    // idioma — es la forma más confiable de re-renderizar sin duplicar
-    // toda la lógica de inicialización de eventos.
     location.reload();
   });
   document.getElementById('pslab-autoConfirmFinal').addEventListener('change', (e) => {
@@ -2752,10 +2234,31 @@
     }
   });
 
+  // ─── EVENTOS DEL PICKER ───────────────────────────────────────────────────
+  document.getElementById('pslab-scan-btn').addEventListener('click', () => loadClub(true));
+  document.getElementById('pslab-player-search').addEventListener('input', e => renderDropdown(e.target.value));
+  document.getElementById('pslab-player-search').addEventListener('focus', () => {
+    if (clubItems.length > 0) renderDropdown(document.getElementById('pslab-player-search').value);
+  });
+  document.getElementById('pslab-player-search').addEventListener('blur', () => {
+    setTimeout(() => {
+      const dd = document.getElementById('pslab-player-dropdown');
+      if (dd) dd.classList.remove('visible');
+    }, 150);
+  });
+  document.getElementById('pslab-selected-player-clear').addEventListener('click', () => {
+    selectedPlayer = null;
+    clearCardResults();
+    updateSelectedPlayerUI();
+  });
+
   attachCardListeners();
   syncQueueInputs();
   applyPanelVisibility();
   updateCounterUI();
+
+  // Arrancar el motor de API (carga el club automáticamente al estar lista la Web App)
+  bootEngine();
 
 
 
@@ -2831,107 +2334,6 @@
   }
 
 
-  // ─── PICKER DE JUGADOR (MODO MANUAL) ──────────────────────────────────────
-  let selectedPlayer = null; // el confirmado por el usuario en el formulario
-
-  // Lee solo los ratings de todas las tarjetas visibles en la página actual,
-  // sin requerir defId ni hacer clic. Se usa para decidir si conviene saltar
-  // páginas (la lista de EA viene ordenada de mayor a menor rating).
-  // Devuelve { min, max } de los ratings encontrados, o null si no hay tarjetas legibles.
-  function readPageRatingRange(list) {
-    if (!list) return null;
-    const cards = Array.from(list.querySelectorAll('li.listFUTItem'));
-    const ratings = [];
-    for (const c of cards) {
-      const el = c.querySelector('.rating');
-      if (!el) continue;
-      const n = parseInt(el.textContent.trim(), 10);
-      if (!isNaN(n)) ratings.push(n);
-    }
-    if (ratings.length === 0) return null;
-    return { min: Math.min(...ratings), max: Math.max(...ratings), count: ratings.length };
-  }
-
-  // Espera a que las tarjetas de la página actual tengan su defId cargado.
-  // El canvas y el data-definition-id se renderizan de forma asíncrona,
-  // así que sondeamos hasta que al menos la primera tarjeta lo tenga.
-  // Espera a que las tarjetas de la lista actual tengan datos legibles
-  // (al menos el rating). Antes dependía de [data-definition-id], que solo
-  // existe con Paletools activo — como ya no usamos Paletools durante la
-  // cola, verificamos por .rating, que siempre está presente en el DOM
-  // nativo de EA.
-  async function waitForCardsLoaded() {
-    return await waitFor(() => {
-      const first = document.querySelector('li.listFUTItem');
-      if (!first) return false;
-      const ratingEl = first.querySelector('.rating');
-      return ratingEl && ratingEl.textContent.trim() ? true : false;
-    }, { timeout: 5000, interval: 120 });
-  }
-
-  function selectPlayer(player) {
-    selectedPlayer = player;
-    // Limpiar caché de posición al cambiar de jugador
-    Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
-    // Limpiar los marcadores visuales de PS aplicados/fallidos de la
-    // corrida anterior — si el usuario confirma otro jugador, el grid
-    // debe verse limpio para que no parezca que todo ya está seleccionado
-    clearCardResults();
-    updateSelectedPlayerUI();
-    queueLog(t('logPlayerSelectedManual', player.name, player.rating, player.position));
-  }
-
-  function updateSelectedPlayerUI() {
-    const card = document.getElementById('pslab-selected-player');
-    if (!card) return;
-    if (!selectedPlayer) {
-      card.classList.remove('visible');
-      return;
-    }
-    document.getElementById('pslab-selected-player-rating').textContent = selectedPlayer.rating;
-    document.getElementById('pslab-selected-player-name').textContent   = selectedPlayer.name;
-    const meta = selectedPlayer.league
-      ? `${selectedPlayer.position} · ${selectedPlayer.league}`
-      : selectedPlayer.position;
-    document.getElementById('pslab-selected-player-meta').textContent = meta;
-    card.classList.add('visible');
-  }
-
-  // ─── MODO MANUAL: confirmar jugador ───────────────────────────────────────
-  function confirmManualPlayer() {
-    const name     = (document.getElementById('pslab-manual-name').value     || '').trim();
-    const rating   = (document.getElementById('pslab-manual-rating').value   || '').trim();
-    const position = (document.getElementById('pslab-manual-position').value || '').trim().toUpperCase();
-
-    if (!name)     { queueLog(t('logManualNeedName')); return; }
-    if (!rating)   { queueLog(t('logManualNeedRating')); return; }
-    if (!position) { queueLog(t('logManualNeedPosition')); return; }
-
-    const ratingNum = parseInt(rating, 10);
-    if (isNaN(ratingNum) || ratingNum < 40 || ratingNum > 99) {
-      queueLog(t('logManualBadRating'));
-      return;
-    }
-
-    // En modo manual no hay defId — la búsqueda usa nombre + rating + posición
-    selectPlayer({ name, rating: String(ratingNum), position, league: '', defId: null });
-  }
-
-  document.getElementById('pslab-manual-confirm-btn').addEventListener('click', confirmManualPlayer);
-
-  // Confirmar con Enter desde cualquier campo del formulario manual
-  ['pslab-manual-name', 'pslab-manual-rating', 'pslab-manual-position'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') confirmManualPlayer();
-    });
-  });
-
-  document.getElementById('pslab-selected-player-clear').addEventListener('click', () => {
-    selectedPlayer = null;
-    Object.keys(playerPositionCache).forEach(k => delete playerPositionCache[k]);
-    clearCardResults();
-    updateSelectedPlayerUI();
-  });
 
   // ─── DRAG & DROP ─────────────────────────────────────────────────────────
   (function initDrag() {
@@ -3092,5 +2494,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v3.6.0: detección y cierre automático del modal "Warning: already have evolution version" que bloqueaba "Confirm Player"). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v4.0.0: motor reescrito con API interna de EA — services.Academy.addItemToSlot + services.Club.search. Sin navegación DOM, sin Paletools requerido). Idioma actual: ${currentLang}.`);
 })();
