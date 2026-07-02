@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         EAFC 26 - Asistente PlayStyles Lab (Evoluciones)
 // @namespace    patricio.playstyleslab.assist
-// @version      3.5.0
+// @version      3.6.0
 // @description  Acelera el flujo de aplicar evoluciones repetibles de PlayStyles Lab en la Web App de EA SPORTS FC 26.
 // @author       Patricio
 // @match        https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*
@@ -43,7 +43,7 @@
   // "escribe" en vez de "escribí", "abre" en vez de "abrí", etc.
   const I18N = {
     es: {
-      panelSubtitle: 'EAFC 26 · v3.5.0',
+      panelSubtitle: 'EAFC 26 · v3.6.0',
       minimizeTitle: 'Minimizar (Alt+Shift+P)',
       manualNamePlaceholder: 'Nombre',
       manualPositionPlaceholder: 'Posición',
@@ -144,7 +144,7 @@
 
     },
     en: {
-      panelSubtitle: 'EAFC 26 · v3.5.0',
+      panelSubtitle: 'EAFC 26 · v3.6.0',
       minimizeTitle: 'Minimize (Alt+Shift+P)',
       manualNamePlaceholder: 'Name',
       manualPositionPlaceholder: 'Position',
@@ -1092,10 +1092,22 @@
     // cambió de tab, abrió el tile, cargó el grid). Un solo intento de 5s
     // puede no alcanzar en ese momento puntual, aunque sí alcance en las
     // evoluciones siguientes de la misma cola.
+    // También puede aparecer un modal de "Warning" del tipo "You already
+    // have an evolution version of this player" que bloquea a "Confirm
+    // Player" — lo detectamos y descartamos automáticamente con "Ok".
     let confirmBtn = null;
     for (let attempt = 0; attempt < 3 && !confirmBtn; attempt++) {
       if (!queueActive) return;
-      confirmBtn = await waitFor(() => findButtonByExactText('Confirm Player'), { timeout: 5000 + attempt * 2000 });
+      confirmBtn = await waitFor(() => {
+        // Si hay un modal de Warning benigno (sin botón Cancel), lo cerramos
+        // automáticamente para despejar el camino a "Confirm Player".
+        const warn = isBenignWarningModalVisible();
+        if (warn) {
+          const okBtn = findButtonByExactText('Ok', warn) || findButtonByExactText('Ok');
+          if (okBtn) simulateRealClick(okBtn);
+        }
+        return findButtonByExactText('Confirm Player');
+      }, { timeout: 5000 + attempt * 2000 });
       if (!confirmBtn && attempt < 2) {
         queueLog(t('logConfirmBtnRetry', item.title, attempt + 1));
         await sleep(500);
@@ -3080,5 +3092,5 @@
     });
   })();
 
-  console.log(`[PS Lab Assist] Script cargado (v3.5.0: marcadores visuales de PS se limpian al confirmar un nuevo jugador durante toda la cola, para poder ver siempre qué pasa en la Web App). Idioma actual: ${currentLang}.`);
+  console.log(`[PS Lab Assist] Script cargado (v3.6.0: detección y cierre automático del modal "Warning: already have evolution version" que bloqueaba "Confirm Player"). Idioma actual: ${currentLang}.`);
 })();
